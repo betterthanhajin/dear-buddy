@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Buddy = {
   id: string;
@@ -20,6 +20,9 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
   const [affection, setAffection] = useState(30);
   const [isHappy, setIsHappy] = useState(false);
   const [hearts, setHearts] = useState<number[]>([]);
+  const [hunger, setIsHunger] = useState(buddy.hunger);
+  const [exp, setExp] = useState(buddy.exp);
+  const [level, setLevel] = useState(1);
 
   const handlePet = () => {
     setAffection((prev) => Math.min(prev + 1, 100));
@@ -36,6 +39,29 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
       setHearts((prev) => prev.filter((heartId) => heartId !== id));
     }, 1000);
   };
+
+  const handleFeed = () => {
+    setIsHunger((prev) => Math.min(prev + 20, 100));
+    handlePet();
+  }
+
+  const handlePlay = () => {
+  setIsHunger((prev) => Math.max(prev - 10, 0));
+
+  setExp((prev) => {
+    const nextExp = prev + 20;
+
+    if (nextExp >= 100) {
+      setLevel((level) => level + 1);
+      return 0;
+    }
+
+    return nextExp;
+  });
+
+  handlePet();
+};
+
 
   return (
     <section className="w-[320px] rounded-3xl bg-white p-6 shadow-lg">
@@ -59,11 +85,14 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
 
         <div className="text-center">
           <h2 className="text-2xl font-bold text-zinc-900">{buddy.name}</h2>
-          <p className="text-sm text-zinc-500">Lv. {buddy.level}</p>
+          <p className="text-sm text-zinc-500">Lv. {level}</p>
         </div>
 
         <Status label="친밀도" value={affection} />
-        <Status label="배고픔" value={buddy.hunger} />
+        <Status label="배고픔" value={hunger} />
+        <Status label="경험치" value={exp} />
+        <button className="border border-gray-300 rounded-sm p-2" onClick={handleFeed}>밥주기</button>
+          <button className="border border-gray-300 rounded-sm p-2" onClick={handlePlay}>놀아주기</button>
       </div>
     </section>
   );

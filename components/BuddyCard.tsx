@@ -22,7 +22,7 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
   const [hearts, setHearts] = useState<number[]>([]);
   const [hunger, setIsHunger] = useState(buddy.hunger);
   const [exp, setExp] = useState(buddy.exp);
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState(0);
 
   const handlePet = () => {
     setAffection((prev) => Math.min(prev + 1, 100));
@@ -46,21 +46,21 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
   }
 
   const handlePlay = () => {
-  setIsHunger((prev) => Math.max(prev - 10, 0));
+    setIsHunger((prev) => Math.max(prev - 10, 0));
 
-  setExp((prev) => {
-    const nextExp = prev + 20;
+    setExp((prev) => {
+      const nextExp = prev + 20;
 
-    if (nextExp >= 100) {
-      setLevel((level) => level + 1);
-      return 0;
-    }
+      if (nextExp >= 100) {
+        setLevel(level + 1);
+        return 0;
+      }
 
-    return nextExp;
-  });
+      return nextExp;
+    });
 
-  handlePet();
-};
+    handlePet();
+  };
 
 
   return (
@@ -92,7 +92,7 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
         <Status label="배고픔" value={hunger} />
         <Status label="경험치" value={exp} />
         <button className="border border-gray-300 rounded-sm p-2" onClick={handleFeed}>밥주기</button>
-          <button className="border border-gray-300 rounded-sm p-2" onClick={handlePlay}>놀아주기</button>
+        <button className="border border-gray-300 rounded-sm p-2" onClick={handlePlay}>놀아주기</button>
       </div>
     </section>
   );

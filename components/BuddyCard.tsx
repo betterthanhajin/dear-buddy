@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Buddy = {
   id: string;
@@ -20,12 +20,14 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
   const [affection, setAffection] = useState(30);
   const [isHappy, setIsHappy] = useState(false);
   const [hearts, setHearts] = useState<number[]>([]);
-  const [hunger, setIsHunger] = useState(buddy.hunger);
-  const [exp, setExp] = useState(buddy.exp);
-  const [level, setLevel] = useState(0);
+  const [hunger, setHunger] = useState(buddy.hunger);
+  const [totalExp, setTotalExp] = useState(buddy.exp);
 
-  const handlePet = () => {
-    setAffection((prev) => Math.min(prev + 1, 100));
+  const level = Math.floor(totalExp / 100) + 1;
+  const exp = totalExp % 100;
+
+
+const showReaction = () => {
     setIsHappy(true);
 
     const id = Date.now();
@@ -33,34 +35,26 @@ export default function BuddyCard({ buddy }: BuddyCardProps) {
 
     setTimeout(() => {
       setIsHappy(false);
-    }, 1000);
-
-    setTimeout(() => {
       setHearts((prev) => prev.filter((heartId) => heartId !== id));
     }, 1000);
-  };
+};
 
-  const handleFeed = () => {
-    setIsHunger((prev) => Math.min(prev + 20, 100));
-    handlePet();
-  }
+  const handlePet = () => {
+  setAffection((prev) => Math.min(prev + 1, 100));
+  showReaction();
+};
 
-  const handlePlay = () => {
-    setIsHunger((prev) => Math.max(prev - 10, 0));
+const handleFeed = () => {
+  setHunger((prev) => Math.min(prev + 20, 100));
+  setAffection((prev) => Math.min(prev + 1, 100));
+  showReaction();
+};
 
-    setExp((prev) => {
-      const nextExp = prev + 20;
-
-      if (nextExp >= 100) {
-        setLevel(level + 1);
-        return 0;
-      }
-
-      return nextExp;
-    });
-
-    handlePet();
-  };
+const handlePlay = () => {
+  setHunger((prev) => Math.max(prev - 10, 0));
+  setTotalExp((prev) => prev + 20);
+  showReaction();
+};
 
 
   return (

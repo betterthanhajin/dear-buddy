@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import BuddyAvatar from "@/components/BuddyAvatar";
+import type { BuddyAnalysis, BuddySpecies } from "@/lib/buddy-analysis";
+import {
+  createAnalyzedAvatarProfile,
+  getSpeciesLabel,
+  normalizeBuddyAnalysis,
+} from "@/lib/buddy-analysis";
 import type { AvatarProfile } from "@/lib/buddy";
 import { createAvatarProfile } from "@/lib/buddy";
 import { extractPaletteFromImage } from "@/lib/palette";
@@ -21,7 +27,25 @@ type DraftBuddy = {
   photoDataUrl: string;
   dominantColor: string;
   accentColor: string;
+  avatarProfile: AvatarProfile;
+  warning: string;
 };
+
+const SPECIES_OPTIONS: BuddySpecies[] = [
+  "custom",
+  "dog",
+  "cat",
+  "rabbit",
+  "bear",
+  "seal",
+  "penguin",
+  "bird",
+  "fox",
+  "frog",
+  "sheep",
+  "koala",
+  "panda",
+];
 
 export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
   const [name, setName] = useState("");
@@ -29,19 +53,8 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const avatarProfile = useMemo(() => {
-    if (!draftBuddy) {
-      return null;
-    }
-
-    return createAvatarProfile({
-      seed: `${name}:${draftBuddy.photoDataUrl.slice(0, 96)}`,
-      dominantColor: draftBuddy.dominantColor,
-      accentColor: draftBuddy.accentColor,
-    });
-  }, [draftBuddy, name]);
-
-  const canCreate = !!draftBuddy && !!avatarProfile && name.trim().length > 0;
+  const avatarProfile = draftBuddy?.avatarProfile ?? null;
+  const canCreate = !!draftBuddy && name.trim().length > 0;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,7 +68,23 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
 
     try {
       const palette = await extractPaletteFromImage(file);
-      setDraftBuddy(palette);
+      const localProfile = createLocalAvatarProfile({
+        ...palette,
+        seed: `${file.name}:${palette.photoDataUrl.slice(0, 96)}`,
+      });
+
+      setDraftBuddy({
+        ...palette,
+        avatarProfile: localProfile,
+        warning: "",
+      });
+
+      const analyzedProfile = await analyzeBuddyPhoto(palette);
+      setDraftBuddy({
+        ...palette,
+        avatarProfile: analyzedProfile.avatarProfile,
+        warning: analyzedProfile.warning,
+      });
     } catch (error) {
       setDraftBuddy(null);
       setErrorMessage(error instanceof Error ? error.message : "이미지를 읽지 못했습니다.");
@@ -76,7 +105,34 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       photoDataUrl: draftBuddy.photoDataUrl,
       dominantColor: draftBuddy.dominantColor,
       accentColor: draftBuddy.accentColor,
-      avatarProfile,
+      avatarProfile: draftBuddy.avatarProfile,
+    });
+  };
+
+  const handleSpeciesChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!draftBuddy) {
+      return;
+    }
+
+    const species = event.target.value as BuddySpecies;
+    const analysis = normalizeBuddyAnalysis({
+      species,
+      displayLabel: getSpeciesLabel(species),
+      confidence: 1,
+      primaryColor: draftBuddy.avatarProfile.bodyColor,
+      secondaryColor: draftBuddy.avatarProfile.secondaryColor ?? draftBuddy.accentColor,
+      accentColor: draftBuddy.avatarProfile.accentColor,
+      earStyle: species === "dog" ? "floppy" : undefined,
+      muzzleStyle: draftBuddy.avatarProfile.muzzleStyle,
+      bodyShape: draftBuddy.avatarProfile.bodyShape,
+      markings: draftBuddy.avatarProfile.markings ?? [],
+      personality: "다정함",
+    });
+
+    setDraftBuddy({
+      ...draftBuddy,
+      avatarProfile: createAnalyzedAvatarProfile(analysis),
+      warning: "",
     });
   };
 
@@ -119,6 +175,12 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
             </p>
           ) : null}
 
+          {draftBuddy?.warning ? (
+            <p className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              {draftBuddy.warning}
+            </p>
+          ) : null}
+
           <div className="mt-5 grid grid-cols-2 gap-4">
             <PreviewPanel title="원본 사진">
               {draftBuddy ? (
@@ -134,7 +196,12 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
             </PreviewPanel>
             <PreviewPanel title="생성 버디">
               {avatarProfile ? (
-                <BuddyAvatar profile={avatarProfile} size="sm" />
+                <div className="flex flex-col items-center gap-2">
+                  <BuddyAvatar profile={avatarProfile} size="sm" />
+                  <span className="text-xs font-semibold text-zinc-500">
+                    {avatarProfile.displayLabel ?? "사진 속 버디"}
+                  </span>
+                </div>
               ) : (
                 <span className="text-sm text-zinc-400">
                   {isAnalyzing ? "분석 중입니다" : "사진을 고르면 나타나요"}
@@ -142,6 +209,23 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
               )}
             </PreviewPanel>
           </div>
+
+          {draftBuddy ? (
+            <label className="mt-5 block">
+              <span className="text-sm font-semibold text-zinc-800">감지된 종류</span>
+              <select
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+                onChange={handleSpeciesChange}
+                value={draftBuddy.avatarProfile.species ?? "custom"}
+              >
+                {SPECIES_OPTIONS.map((species) => (
+                  <option key={species} value={species}>
+                    {getSpeciesLabel(species)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           <label className="mt-5 block">
             <span className="text-sm font-semibold text-zinc-800">버디 이름</span>
@@ -166,6 +250,90 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       </div>
     </section>
   );
+}
+
+async function analyzeBuddyPhoto(palette: {
+  photoDataUrl: string;
+  dominantColor: string;
+  accentColor: string;
+}): Promise<{ avatarProfile: AvatarProfile; warning: string }> {
+  try {
+    const response = await fetch("/api/analyze-buddy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageDataUrl: palette.photoDataUrl,
+        dominantColor: palette.dominantColor,
+        accentColor: palette.accentColor,
+      }),
+    });
+
+    const result: unknown = await response.json();
+
+    if (isAnalyzeSuccess(result)) {
+      return { avatarProfile: result.avatarProfile, warning: "" };
+    }
+
+    return {
+      avatarProfile: createLocalAvatarProfile({
+        seed: palette.photoDataUrl.slice(0, 96),
+        dominantColor: palette.dominantColor,
+        accentColor: palette.accentColor,
+      }),
+      warning: getAnalyzeWarning(result),
+    };
+  } catch {
+    return {
+      avatarProfile: createLocalAvatarProfile({
+        seed: palette.photoDataUrl.slice(0, 96),
+        dominantColor: palette.dominantColor,
+        accentColor: palette.accentColor,
+      }),
+      warning: "사진 분석에 실패해 로컬 생성으로 진행합니다.",
+    };
+  }
+}
+
+function createLocalAvatarProfile({
+  seed,
+  dominantColor,
+  accentColor,
+}: {
+  seed: string;
+  dominantColor: string;
+  accentColor: string;
+}): AvatarProfile {
+  return {
+    ...createAvatarProfile({ seed, dominantColor, accentColor }),
+    species: "custom",
+    displayLabel: "사진 속 버디",
+    secondaryColor: accentColor,
+    muzzleStyle: "round",
+    bodyShape: "round",
+    markings: [],
+  };
+}
+
+function isAnalyzeSuccess(value: unknown): value is {
+  ok: true;
+  analysis: BuddyAnalysis;
+  avatarProfile: AvatarProfile;
+} {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as { ok?: unknown; avatarProfile?: unknown };
+  return candidate.ok === true && !!candidate.avatarProfile;
+}
+
+function getAnalyzeWarning(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return "사진 분석에 실패해 로컬 생성으로 진행합니다.";
+  }
+
+  const error = (value as { error?: unknown }).error;
+  return typeof error === "string" ? error : "사진 분석에 실패해 로컬 생성으로 진행합니다.";
 }
 
 function PreviewPanel({ children, title }: { children: React.ReactNode; title: string }) {

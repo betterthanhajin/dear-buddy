@@ -29,12 +29,14 @@ export default function DearBuddyApp() {
     photoDataUrl,
     dominantColor,
     accentColor,
+    avatarProfile,
   }: CreateBuddyPayload) => {
     const nextBuddy = createBuddy({
       name,
       photoDataUrl,
       dominantColor,
       accentColor,
+      avatarProfile,
     });
     const result = saveBuddy(nextBuddy);
 

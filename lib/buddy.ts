@@ -10,11 +10,17 @@ export type BuddyStats = {
 };
 
 export type AvatarProfile = {
+  species?: import("./buddy-analysis").BuddySpecies;
+  displayLabel?: string;
   bodyColor: string;
+  secondaryColor?: string;
   accentColor: string;
   earShape: "round" | "floppy" | "pointy";
   accessory: "ribbon" | "patch" | "star";
   cheekStyle: "dot" | "oval" | "none";
+  muzzleStyle?: "none" | "round" | "snout" | "beak";
+  bodyShape?: "round" | "oval" | "pear";
+  markings?: string[];
 };
 
 export type Buddy = {
@@ -32,6 +38,7 @@ type CreateBuddyInput = {
   photoDataUrl: string;
   dominantColor: string;
   accentColor: string;
+  avatarProfile?: AvatarProfile;
 };
 
 type CreateAvatarProfileInput = {
@@ -105,6 +112,7 @@ export function createBuddy({
   photoDataUrl,
   dominantColor,
   accentColor,
+  avatarProfile,
 }: CreateBuddyInput): Buddy {
   const now = new Date().toISOString();
 
@@ -114,11 +122,13 @@ export function createBuddy({
     photoDataUrl,
     createdAt: now,
     updatedAt: now,
-    avatarProfile: createAvatarProfile({
-      seed: `${name}:${photoDataUrl.slice(0, 96)}`,
-      dominantColor,
-      accentColor,
-    }),
+    avatarProfile:
+      avatarProfile ??
+      createAvatarProfile({
+        seed: `${name}:${photoDataUrl.slice(0, 96)}`,
+        dominantColor,
+        accentColor,
+      }),
     stats: { ...DEFAULT_STATS },
   };
 }

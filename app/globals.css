@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+html {
+  background: #f7f2ec;
+}
+
+body {
+  min-width: 320px;
+}
+
 @keyframes buddy-float {
   0% {
     transform: translateY(0) rotate(-2deg);
@@ -14,6 +22,20 @@
 
 .buddy-float {
   animation: buddy-float 2.5s ease-in-out infinite;
+}
+
+@keyframes gentle-pop {
+  0% {
+    transform: scale(0.96);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.gentle-pop {
+  animation: gentle-pop 180ms ease-out;
 }
 
 @keyframes heart-pop {

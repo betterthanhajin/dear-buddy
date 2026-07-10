@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dear Buddy
 
-## Getting Started
+Dear Buddy는 사용자가 아끼는 애착 인형 사진을 업로드하면, 그 사진의 대표 색을 바탕으로 2D 버디를 만들고 다마고치처럼 돌볼 수 있는 브라우저 앱입니다.
 
-First, run the development server:
+## 현재 MVP
+
+- 인형 사진 업로드
+- 브라우저 안에서 사진 미리보기
+- 대표 색 기반 2D SVG 버디 생성
+- 버디 이름 지정
+- 친밀도, 배부름, 에너지, 경험치 관리
+- 쓰다듬기, 밥주기, 놀아주기, 재우기 액션
+- localStorage 저장과 새로고침 복원
+- 저장된 버디 초기화
+
+사진은 서버로 업로드하지 않습니다. 현재 버전은 브라우저에서만 이미지를 읽고, 생성된 버디와 원본 사진 데이터 URL을 localStorage에 저장합니다.
+
+## 실행
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+검증 명령:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 다음 후보
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 여러 버디 저장
+- 실제 이미지 생성 API 연동
+- 성장 단계별 외형 변화
+- 하루 단위 돌봄 루프
+- 모바일 홈 화면 설치 경험 개선

@@ -59,6 +59,8 @@ function isBuddy(value: unknown): value is Buddy {
     typeof candidate.id === "string" &&
     typeof candidate.name === "string" &&
     typeof candidate.photoDataUrl === "string" &&
+    (typeof candidate.generatedImageDataUrl === "undefined" ||
+      typeof candidate.generatedImageDataUrl === "string") &&
     typeof candidate.createdAt === "string" &&
     typeof candidate.updatedAt === "string" &&
     !!candidate.avatarProfile &&

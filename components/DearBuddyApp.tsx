@@ -30,6 +30,7 @@ export default function DearBuddyApp() {
     dominantColor,
     accentColor,
     avatarProfile,
+    generatedImageDataUrl,
   }: CreateBuddyPayload) => {
     const nextBuddy = createBuddy({
       name,
@@ -37,6 +38,7 @@ export default function DearBuddyApp() {
       dominantColor,
       accentColor,
       avatarProfile,
+      generatedImageDataUrl,
     });
     const result = saveBuddy(nextBuddy);
 

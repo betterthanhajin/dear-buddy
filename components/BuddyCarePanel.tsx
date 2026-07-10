@@ -52,7 +52,16 @@ export default function BuddyCarePanel({
           </div>
 
           <div className="mt-6 rounded-full bg-[#fff7ed] p-5">
-            <BuddyAvatar mood={mood} profile={buddy.avatarProfile} size="lg" />
+            {buddy.generatedImageDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`${buddy.name} 버디`}
+                className="h-48 w-48 object-contain"
+                src={buddy.generatedImageDataUrl}
+              />
+            ) : (
+              <BuddyAvatar mood={mood} profile={buddy.avatarProfile} size="lg" />
+            )}
           </div>
 
           <p className="mt-5 text-sm font-bold text-zinc-500">Lv. {level}</p>
@@ -82,8 +91,7 @@ export default function BuddyCarePanel({
             <div className="flex flex-col justify-center">
               <p className="text-sm font-bold text-zinc-900">처음 만난 인형 사진</p>
               <p className="mt-1 text-sm leading-6 text-zinc-500">
-                이 사진에서 뽑은 색으로 버디가 만들어졌어요. 사진은 이 브라우저에만
-                저장됩니다.
+                이 사진을 바탕으로 버디 이미지가 만들어졌어요. 사진과 버디는 이 브라우저에만 저장됩니다.
               </p>
             </div>
           </div>

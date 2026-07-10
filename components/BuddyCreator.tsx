@@ -20,6 +20,7 @@ type BuddyCreatorProps = {
     dominantColor: string;
     accentColor: string;
     avatarProfile: AvatarProfile;
+    generatedImageDataUrl?: string;
   }) => void;
 };
 
@@ -28,6 +29,7 @@ type DraftBuddy = {
   dominantColor: string;
   accentColor: string;
   avatarProfile: AvatarProfile;
+  generatedImageDataUrl?: string;
   warning: string;
 };
 
@@ -54,6 +56,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const avatarProfile = draftBuddy?.avatarProfile ?? null;
+  const generatedImageDataUrl = draftBuddy?.generatedImageDataUrl;
   const canCreate = !!draftBuddy && name.trim().length > 0;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,10 +83,15 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       });
 
       const analyzedProfile = await analyzeBuddyPhoto(palette);
+      const generatedImage = analyzedProfile.analysis
+        ? await generateBuddyImage(analyzedProfile.analysis)
+        : null;
+
       setDraftBuddy({
         ...palette,
         avatarProfile: analyzedProfile.avatarProfile,
-        warning: analyzedProfile.warning,
+        generatedImageDataUrl: generatedImage?.imageDataUrl,
+        warning: generatedImage?.warning || analyzedProfile.warning,
       });
     } catch (error) {
       setDraftBuddy(null);
@@ -106,6 +114,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       dominantColor: draftBuddy.dominantColor,
       accentColor: draftBuddy.accentColor,
       avatarProfile: draftBuddy.avatarProfile,
+      generatedImageDataUrl: draftBuddy.generatedImageDataUrl,
     });
   };
 
@@ -132,6 +141,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
     setDraftBuddy({
       ...draftBuddy,
       avatarProfile: createAnalyzedAvatarProfile(analysis),
+      generatedImageDataUrl: undefined,
       warning: "",
     });
   };
@@ -197,7 +207,16 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
             <PreviewPanel title="생성 버디">
               {avatarProfile ? (
                 <div className="flex flex-col items-center gap-2">
-                  <BuddyAvatar profile={avatarProfile} size="sm" />
+                  {generatedImageDataUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt="생성된 버디"
+                      className="h-24 w-24 rounded-3xl object-contain"
+                      src={generatedImageDataUrl}
+                    />
+                  ) : (
+                    <BuddyAvatar profile={avatarProfile} size="sm" />
+                  )}
                   <span className="text-xs font-semibold text-zinc-500">
                     {avatarProfile.displayLabel ?? "사진 속 버디"}
                   </span>
@@ -256,7 +275,7 @@ async function analyzeBuddyPhoto(palette: {
   photoDataUrl: string;
   dominantColor: string;
   accentColor: string;
-}): Promise<{ avatarProfile: AvatarProfile; warning: string }> {
+}): Promise<{ avatarProfile: AvatarProfile; analysis?: BuddyAnalysis; warning: string }> {
   try {
     const response = await fetch("/api/analyze-buddy", {
       method: "POST",
@@ -271,7 +290,11 @@ async function analyzeBuddyPhoto(palette: {
     const result: unknown = await response.json();
 
     if (isAnalyzeSuccess(result)) {
-      return { avatarProfile: result.avatarProfile, warning: "" };
+      return {
+        avatarProfile: result.avatarProfile,
+        analysis: result.analysis,
+        warning: "",
+      };
     }
 
     return {
@@ -291,6 +314,28 @@ async function analyzeBuddyPhoto(palette: {
       }),
       warning: "사진 분석에 실패해 로컬 생성으로 진행합니다.",
     };
+  }
+}
+
+async function generateBuddyImage(
+  analysis: BuddyAnalysis,
+): Promise<{ imageDataUrl?: string; warning: string }> {
+  try {
+    const response = await fetch("/api/generate-buddy-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analysis }),
+    });
+
+    const result: unknown = await response.json();
+
+    if (isGenerateImageSuccess(result)) {
+      return { imageDataUrl: result.imageDataUrl, warning: "" };
+    }
+
+    return { warning: getGenerateImageWarning(result) };
+  } catch {
+    return { warning: "버디 이미지 생성에 실패해 SVG 버디로 진행합니다." };
   }
 }
 
@@ -334,6 +379,27 @@ function getAnalyzeWarning(value: unknown) {
 
   const error = (value as { error?: unknown }).error;
   return typeof error === "string" ? error : "사진 분석에 실패해 로컬 생성으로 진행합니다.";
+}
+
+function isGenerateImageSuccess(value: unknown): value is {
+  ok: true;
+  imageDataUrl: string;
+} {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as { ok?: unknown; imageDataUrl?: unknown };
+  return candidate.ok === true && typeof candidate.imageDataUrl === "string";
+}
+
+function getGenerateImageWarning(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return "버디 이미지 생성에 실패해 SVG 버디로 진행합니다.";
+  }
+
+  const error = (value as { error?: unknown }).error;
+  return typeof error === "string" ? error : "버디 이미지 생성에 실패해 SVG 버디로 진행합니다.";
 }
 
 function PreviewPanel({ children, title }: { children: React.ReactNode; title: string }) {

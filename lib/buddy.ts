@@ -27,6 +27,7 @@ export type Buddy = {
   id: string;
   name: string;
   photoDataUrl: string;
+  generatedImageDataUrl?: string;
   createdAt: string;
   updatedAt: string;
   avatarProfile: AvatarProfile;
@@ -39,6 +40,7 @@ type CreateBuddyInput = {
   dominantColor: string;
   accentColor: string;
   avatarProfile?: AvatarProfile;
+  generatedImageDataUrl?: string;
 };
 
 type CreateAvatarProfileInput = {
@@ -113,10 +115,11 @@ export function createBuddy({
   dominantColor,
   accentColor,
   avatarProfile,
+  generatedImageDataUrl,
 }: CreateBuddyInput): Buddy {
   const now = new Date().toISOString();
 
-  return {
+  const buddy: Buddy = {
     id: crypto.randomUUID(),
     name: name.trim(),
     photoDataUrl,
@@ -131,6 +134,12 @@ export function createBuddy({
       }),
     stats: { ...DEFAULT_STATS },
   };
+
+  if (generatedImageDataUrl) {
+    buddy.generatedImageDataUrl = generatedImageDataUrl;
+  }
+
+  return buddy;
 }
 
 export function applyBuddyAction(buddy: Buddy, action: BuddyAction): Buddy {

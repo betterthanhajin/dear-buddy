@@ -11,6 +11,8 @@ import {
 } from "@/lib/buddy-analysis";
 import type { AvatarProfile } from "@/lib/buddy";
 import { createAvatarProfile } from "@/lib/buddy";
+import type { BuddyCreationStage } from "@/lib/buddy-creation-status";
+import { getBuddyCreationStatus } from "@/lib/buddy-creation-status";
 import { extractPaletteFromImage } from "@/lib/palette";
 
 type BuddyCreatorProps = {
@@ -53,11 +55,12 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
   const [name, setName] = useState("");
   const [draftBuddy, setDraftBuddy] = useState<DraftBuddy | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [creationStage, setCreationStage] = useState<BuddyCreationStage>("idle");
 
   const avatarProfile = draftBuddy?.avatarProfile ?? null;
   const generatedImageDataUrl = draftBuddy?.generatedImageDataUrl;
-  const canCreate = !!draftBuddy && name.trim().length > 0;
+  const creationStatus = getBuddyCreationStatus(creationStage);
+  const canCreate = !!draftBuddy && name.trim().length > 0 && !creationStatus.isBusy;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,7 +70,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
     }
 
     setErrorMessage("");
-    setIsAnalyzing(true);
+    setCreationStage("reading");
 
     try {
       const palette = await extractPaletteFromImage(file);
@@ -82,7 +85,9 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
         warning: "",
       });
 
+      setCreationStage("analyzing");
       const analyzedProfile = await analyzeBuddyPhoto(palette);
+      setCreationStage(analyzedProfile.analysis ? "generating" : "idle");
       const generatedImage = analyzedProfile.analysis
         ? await generateBuddyImage(analyzedProfile.analysis)
         : null;
@@ -97,7 +102,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       setDraftBuddy(null);
       setErrorMessage(error instanceof Error ? error.message : "이미지를 읽지 못했습니다.");
     } finally {
-      setIsAnalyzing(false);
+      setCreationStage("idle");
     }
   };
 
@@ -191,6 +196,15 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
             </p>
           ) : null}
 
+          {creationStatus.message ? (
+            <div
+              aria-live="polite"
+              className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700"
+            >
+              {creationStatus.message}
+            </div>
+          ) : null}
+
           <div className="mt-5 grid grid-cols-2 gap-4">
             <PreviewPanel title="원본 사진">
               {draftBuddy ? (
@@ -223,7 +237,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
                 </div>
               ) : (
                 <span className="text-sm text-zinc-400">
-                  {isAnalyzing ? "분석 중입니다" : "사진을 고르면 나타나요"}
+                  {creationStatus.message || "사진을 고르면 나타나요"}
                 </span>
               )}
             </PreviewPanel>
@@ -260,10 +274,10 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
 
           <button
             className="mt-5 w-full rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition enabled:hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-zinc-300"
-            disabled={!canCreate || isAnalyzing}
+            disabled={!canCreate}
             type="submit"
           >
-            버디 만들기
+            {creationStatus.isBusy ? "잠시만 기다려 주세요" : "버디 만들기"}
           </button>
         </form>
       </div>

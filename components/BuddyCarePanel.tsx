@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+
 import BuddyAvatar from "@/components/BuddyAvatar";
+import { getBuddyActionReaction } from "@/lib/buddy-action-reaction";
 import type { Buddy, BuddyAction } from "@/lib/buddy";
 import { applyBuddyAction, getBuddyLevel, getBuddyMood } from "@/lib/buddy";
 
@@ -26,8 +29,17 @@ export default function BuddyCarePanel({
 }: BuddyCarePanelProps) {
   const mood = getBuddyMood(buddy.stats);
   const { level, progress } = getBuddyLevel(buddy.stats.exp);
+  const [reaction, setReaction] = useState<{
+    action: BuddyAction;
+    nonce: number;
+  } | null>(null);
+  const activeReaction = reaction ? getBuddyActionReaction(reaction.action) : null;
 
   const handleAction = (action: BuddyAction) => {
+    setReaction((currentReaction) => ({
+      action,
+      nonce: (currentReaction?.nonce ?? 0) + 1,
+    }));
     onChange(applyBuddyAction(buddy, action));
   };
 
@@ -51,16 +63,29 @@ export default function BuddyCarePanel({
             </button>
           </div>
 
-          <div className="mt-6 rounded-full bg-[#fff7ed] p-5">
+          <div className="relative mt-6 rounded-full bg-[#fff7ed] p-5">
+            {activeReaction ? (
+              <span
+                aria-hidden="true"
+                className="buddy-reaction-badge absolute right-6 top-4 z-10 rounded-full bg-white/90 px-3 py-1 text-sm font-black text-rose-500 shadow-lg shadow-rose-100"
+                key={`${reaction?.action}-${reaction?.nonce}-badge`}
+              >
+                {activeReaction.symbol}
+              </span>
+            ) : null}
             {buddy.generatedImageDataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={`${buddy.name} 버디`}
-                className="buddy-float h-48 w-48 object-contain"
+                className={`buddy-float h-48 w-48 object-contain ${activeReaction?.animationClassName ?? ""}`}
+                key={reaction?.nonce ?? "generated-buddy"}
                 src={buddy.generatedImageDataUrl}
               />
             ) : (
-              <div className="buddy-float">
+              <div
+                className={`buddy-float ${activeReaction?.animationClassName ?? ""}`}
+                key={reaction?.nonce ?? "svg-buddy"}
+              >
                 <BuddyAvatar mood={mood} profile={buddy.avatarProfile} size="lg" />
               </div>
             )}
@@ -73,7 +98,9 @@ export default function BuddyCarePanel({
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="mt-3 text-sm text-zinc-500">{getMoodText(mood)}</p>
+          <p aria-live="polite" className="mt-3 text-sm text-zinc-500">
+            {activeReaction?.message ?? getMoodText(mood)}
+          </p>
 
           {storageWarning ? (
             <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">

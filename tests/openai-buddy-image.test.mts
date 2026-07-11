@@ -21,13 +21,19 @@ const analysis = {
   personality: "느긋하고 폭신함",
 };
 
-test("buildBuddyImagePrompt asks for a cute plush sticker while preserving detected traits", () => {
+test("buildBuddyImagePrompt asks for a cute pixel art buddy while preserving detected traits", () => {
   const prompt = buildBuddyImagePrompt(analysis);
 
   assert.match(prompt, /하얀 물개 인형/);
   assert.match(prompt, /작은 검은 코/);
   assert.match(prompt, /짧은 지느러미/);
-  assert.match(prompt, /soft 2D plush character sticker/);
+  assert.match(prompt, /pixel art virtual pet sprite/);
+  assert.match(prompt, /soft pixel art/);
+  assert.match(prompt, /no text/i);
+  assert.match(prompt, /no letters/i);
+  assert.match(prompt, /no logo/i);
+  assert.match(prompt, /no app name/i);
+  assert.doesNotMatch(prompt, /Dear Buddy/);
   assert.doesNotMatch(prompt, /svg/i);
 });
 

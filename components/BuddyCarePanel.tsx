@@ -56,11 +56,13 @@ export default function BuddyCarePanel({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={`${buddy.name} 버디`}
-                className="h-48 w-48 object-contain"
+                className="buddy-float h-48 w-48 object-contain"
                 src={buddy.generatedImageDataUrl}
               />
             ) : (
-              <BuddyAvatar mood={mood} profile={buddy.avatarProfile} size="lg" />
+              <div className="buddy-float">
+                <BuddyAvatar mood={mood} profile={buddy.avatarProfile} size="lg" />
+              </div>
             )}
           </div>
 

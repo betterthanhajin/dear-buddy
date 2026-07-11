@@ -10,14 +10,15 @@ export function buildBuddyImagePrompt(analysis: BuddyAnalysis) {
     analysis.markings.length > 0 ? analysis.markings.join(", ") : "simple soft details";
 
   return [
-    "Create a cute soft 2D plush character sticker for a virtual pet app named Dear Buddy.",
+    "Create a cute pixel art virtual pet sprite.",
+    "No text, no letters, no logo, no app name, no frame, no caption.",
     `The character is based on this uploaded beloved object: ${analysis.displayLabel}.`,
     `Detected species or motif: ${analysis.species}.`,
     `Key visible traits to preserve: ${markings}.`,
     `Use these colors as the main palette: primary ${analysis.primaryColor}, secondary ${analysis.secondaryColor}, accent ${analysis.accentColor}.`,
     `Personality: ${analysis.personality}.`,
-    "Art direction: soft 2D plush character sticker, round oversized head, tiny body, short soft limbs, gentle face, small glossy eyes, subtle fabric texture, stitched toy charm, warm and lovable, polished mobile game asset.",
-    "Composition: centered full body character, transparent background, no text, no logo, no frame, no realistic photo background, no scary expression.",
+    "Art direction: soft pixel art, retro handheld pet game sprite, readable silhouette, round oversized head, tiny body, short soft limbs, gentle face, small glossy pixel eyes, plush-like details, warm and lovable, polished mobile game asset.",
+    "Composition: single centered full-body buddy only, transparent background, no realistic photo background, no scary expression.",
   ].join(" ");
 }
 

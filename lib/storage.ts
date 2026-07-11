@@ -28,12 +28,16 @@ export function saveBuddy(buddy: Buddy): SaveResult {
     return { ok: false, error: "이 브라우저에서는 저장을 사용할 수 없습니다." };
   }
 
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(buddy));
-    return { ok: true };
-  } catch {
-    return { ok: false, error: "버디 상태를 저장하지 못했습니다." };
+  for (const candidate of getStorageCandidates(buddy)) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(candidate));
+      return { ok: true };
+    } catch {
+      // Try the next smaller candidate before surfacing a storage warning.
+    }
   }
+
+  return { ok: false, error: "버디 상태를 저장하지 못했습니다." };
 }
 
 export function clearSavedBuddy() {
@@ -46,6 +50,17 @@ export function clearSavedBuddy() {
 
 function hasLocalStorage() {
   return typeof localStorage !== "undefined";
+}
+
+function getStorageCandidates(buddy: Buddy): Buddy[] {
+  if (!buddy.generatedImageDataUrl) {
+    return [buddy];
+  }
+
+  const buddyWithoutGeneratedImage = { ...buddy };
+  delete buddyWithoutGeneratedImage.generatedImageDataUrl;
+
+  return [buddy, buddyWithoutGeneratedImage];
 }
 
 function isBuddy(value: unknown): value is Buddy {

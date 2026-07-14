@@ -19,12 +19,20 @@ export default function DearBuddyApp() {
   const [storageWarning, setStorageWarning] = useState("");
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setBuddy(loadSavedBuddy());
+    let isMounted = true;
+
+    loadSavedBuddy().then((savedBuddy) => {
+      if (isMounted) {
+        setBuddy(savedBuddy);
+      }
     });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const handleCreate = ({
+  const handleCreate = async ({
     name,
     photoDataUrl,
     dominantColor,
@@ -40,21 +48,21 @@ export default function DearBuddyApp() {
       avatarProfile,
       generatedImageDataUrl,
     });
-    const result = saveBuddy(nextBuddy);
+    const result = await saveBuddy(nextBuddy);
 
     setBuddy(nextBuddy);
     setStorageWarning(result.ok ? "" : result.error);
   };
 
-  const handleChange = (nextBuddy: Buddy) => {
-    const result = saveBuddy(nextBuddy);
+  const handleChange = async (nextBuddy: Buddy) => {
+    const result = await saveBuddy(nextBuddy);
 
     setBuddy(nextBuddy);
     setStorageWarning(result.ok ? "" : result.error);
   };
 
-  const handleReset = () => {
-    clearSavedBuddy();
+  const handleReset = async () => {
+    await clearSavedBuddy(undefined, buddy?.id);
     setBuddy(null);
     setStorageWarning("");
   };

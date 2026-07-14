@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createBuddy } from "../lib/buddy.ts";
-import { clearSavedBuddy, loadSavedBuddy, saveBuddy } from "../lib/storage.ts";
+import {
+  clearSavedBuddy,
+  type BuddyImageStore,
+  loadSavedBuddy,
+  saveBuddy,
+} from "../lib/storage.ts";
 
 class MemoryStorage implements Storage {
   private readonly store = new Map<string, string>();
@@ -71,7 +76,23 @@ function useQuotaStorage(maxLength: number) {
   return storage;
 }
 
-test("saveBuddy and loadSavedBuddy persist the current buddy", () => {
+function createMemoryImageStore(): BuddyImageStore {
+  const images = new Map<string, string>();
+
+  return {
+    async delete(id: string) {
+      images.delete(id);
+    },
+    async load(id: string) {
+      return images.get(id);
+    },
+    async save(id: string, imageDataUrl: string) {
+      images.set(id, imageDataUrl);
+    },
+  };
+}
+
+test("saveBuddy and loadSavedBuddy persist the current buddy", async () => {
   useMemoryStorage();
   const buddy = createBuddy({
     name: "몽실이",
@@ -80,21 +101,22 @@ test("saveBuddy and loadSavedBuddy persist the current buddy", () => {
     accentColor: "#f2d0b5",
   });
 
-  const result = saveBuddy(buddy);
+  const result = await saveBuddy(buddy);
 
   assert.equal(result.ok, true);
-  assert.deepEqual(loadSavedBuddy(), buddy);
+  assert.deepEqual(await loadSavedBuddy(), buddy);
 });
 
-test("loadSavedBuddy returns null for malformed saved data", () => {
+test("loadSavedBuddy returns null for malformed saved data", async () => {
   const storage = useMemoryStorage();
   storage.setItem("dear-buddy.saved-buddy.v1", JSON.stringify({ name: "broken" }));
 
-  assert.equal(loadSavedBuddy(), null);
+  assert.equal(await loadSavedBuddy(), null);
 });
 
-test("saveBuddy falls back to the avatar profile when the generated image is too large", () => {
+test("saveBuddy stores large generated images outside localStorage and restores them", async () => {
   useQuotaStorage(1800);
+  const imageStore = createMemoryImageStore();
   const buddy = createBuddy({
     name: "몽실이",
     photoDataUrl: "data:image/png;base64,abc",
@@ -103,8 +125,34 @@ test("saveBuddy falls back to the avatar profile when the generated image is too
     generatedImageDataUrl: `data:image/png;base64,${"a".repeat(3000)}`,
   });
 
-  const result = saveBuddy(buddy);
-  const savedBuddy = loadSavedBuddy();
+  const result = await saveBuddy(buddy, imageStore);
+  const savedBuddy = await loadSavedBuddy(imageStore);
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(savedBuddy, buddy);
+});
+
+test("saveBuddy falls back to the avatar profile when image storage fails", async () => {
+  useQuotaStorage(1800);
+  const imageStore: BuddyImageStore = {
+    async delete() {},
+    async load() {
+      return undefined;
+    },
+    async save() {
+      throw new Error("image store unavailable");
+    },
+  };
+  const buddy = createBuddy({
+    name: "몽실이",
+    photoDataUrl: "data:image/png;base64,abc",
+    dominantColor: "#c58b63",
+    accentColor: "#f2d0b5",
+    generatedImageDataUrl: `data:image/png;base64,${"a".repeat(3000)}`,
+  });
+
+  const result = await saveBuddy(buddy, imageStore);
+  const savedBuddy = await loadSavedBuddy(imageStore);
 
   assert.equal(result.ok, true);
   assert.equal(savedBuddy?.name, "몽실이");
@@ -113,8 +161,9 @@ test("saveBuddy falls back to the avatar profile when the generated image is too
   assert.deepEqual(savedBuddy?.avatarProfile, buddy.avatarProfile);
 });
 
-test("clearSavedBuddy removes the persisted buddy", () => {
+test("clearSavedBuddy removes the persisted buddy", async () => {
   useMemoryStorage();
+  const imageStore = createMemoryImageStore();
   const buddy = createBuddy({
     name: "몽실이",
     photoDataUrl: "data:image/png;base64,abc",
@@ -122,8 +171,8 @@ test("clearSavedBuddy removes the persisted buddy", () => {
     accentColor: "#f2d0b5",
   });
 
-  saveBuddy(buddy);
-  clearSavedBuddy();
+  await saveBuddy(buddy, imageStore);
+  await clearSavedBuddy(imageStore, buddy.id);
 
-  assert.equal(loadSavedBuddy(), null);
+  assert.equal(await loadSavedBuddy(imageStore), null);
 });

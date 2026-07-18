@@ -1,11 +1,27 @@
 import type { BuddyAnalysis } from "./buddy-analysis";
 
+export const BUDDY_ACTION_IMAGE_KEYS = ["idle", "pet", "feed", "play", "rest"] as const;
+export type BuddyActionImageKey = (typeof BUDDY_ACTION_IMAGE_KEYS)[number];
+export type BuddyActionImages = Partial<Record<BuddyActionImageKey, string>>;
+
 export type GenerateBuddyImageRequestInput = {
   analysis: BuddyAnalysis;
+  actionKey?: BuddyActionImageKey;
   model: string;
 };
 
-export function buildBuddyImagePrompt(analysis: BuddyAnalysis) {
+const ACTION_DIRECTIONS: Record<BuddyActionImageKey, string> = {
+  idle: "Pose: neutral idle pose, standing calmly and looking at the viewer.",
+  pet: "Pose: being gently petted, bashful happy face, soft blushing cheeks.",
+  feed: "Pose: eating a tiny snack, pleased expression, tiny food crumb detail.",
+  play: "Pose: playful jump, energetic smile, dynamic raised limbs.",
+  rest: "Pose: sleepy resting pose, relaxed eyes, cozy nap feeling.",
+};
+
+export function buildBuddyImagePrompt(
+  analysis: BuddyAnalysis,
+  actionKey: BuddyActionImageKey = "idle",
+) {
   const markings =
     analysis.markings.length > 0 ? analysis.markings.join(", ") : "simple soft details";
 
@@ -17,18 +33,20 @@ export function buildBuddyImagePrompt(analysis: BuddyAnalysis) {
     `Key visible traits to preserve: ${markings}.`,
     `Use these colors as the main palette: primary ${analysis.primaryColor}, secondary ${analysis.secondaryColor}, accent ${analysis.accentColor}.`,
     `Personality: ${analysis.personality}.`,
+    ACTION_DIRECTIONS[actionKey],
     "Art direction: soft pixel art, retro handheld pet game sprite, readable silhouette, round oversized head, tiny body, short soft limbs, gentle face, small glossy pixel eyes, plush-like details, warm and lovable, polished mobile game asset.",
     "Composition: single centered full-body buddy only, transparent background, no realistic photo background, no scary expression.",
   ].join(" ");
 }
 
 export function getGenerateBuddyImageRequestPayload({
+  actionKey,
   analysis,
   model,
 }: GenerateBuddyImageRequestInput) {
   return {
     model,
-    prompt: buildBuddyImagePrompt(analysis),
+    prompt: buildBuddyImagePrompt(analysis, actionKey),
     size: "1024x1024",
     output_format: "png",
     quality: "medium",
@@ -59,4 +77,35 @@ export function extractGeneratedImageDataUrl(response: unknown): string {
   }
 
   return `data:image/png;base64,${b64Json}`;
+}
+
+export function extractGeneratedActionImages(
+  response: unknown,
+  actionKeys: readonly BuddyActionImageKey[],
+): BuddyActionImages {
+  if (!response || typeof response !== "object") {
+    throw new Error("생성 이미지를 읽지 못했습니다.");
+  }
+
+  const data = (response as { data?: unknown }).data;
+
+  if (!Array.isArray(data)) {
+    throw new Error("생성 이미지를 읽지 못했습니다.");
+  }
+
+  return actionKeys.reduce<BuddyActionImages>((images, actionKey, index) => {
+    const item = data[index];
+
+    if (!item || typeof item !== "object") {
+      return images;
+    }
+
+    const b64Json = (item as { b64_json?: unknown }).b64_json;
+
+    if (typeof b64Json === "string" && b64Json.trim().length > 0) {
+      images[actionKey] = `data:image/png;base64,${b64Json}`;
+    }
+
+    return images;
+  }, {});
 }

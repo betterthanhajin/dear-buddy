@@ -5,12 +5,18 @@ import { useState } from "react";
 import BuddyAvatar from "@/components/BuddyAvatar";
 import { getBuddyActionReaction } from "@/lib/buddy-action-reaction";
 import type { Buddy, BuddyAction } from "@/lib/buddy";
-import { applyBuddyAction, getBuddyLevel, getBuddyMood } from "@/lib/buddy";
+import {
+  applyBuddyAction,
+  applyDailyCareBonus,
+  getBuddyLevel,
+  getBuddyMood,
+} from "@/lib/buddy";
 
 type BuddyCarePanelProps = {
   buddy: Buddy;
   onChange: (buddy: Buddy) => void;
   onReset: () => void;
+  returnMessage?: string;
   storageWarning?: string;
 };
 
@@ -25,6 +31,7 @@ export default function BuddyCarePanel({
   buddy,
   onChange,
   onReset,
+  returnMessage,
   storageWarning,
 }: BuddyCarePanelProps) {
   const mood = getBuddyMood(buddy.stats);
@@ -33,14 +40,30 @@ export default function BuddyCarePanel({
     action: BuddyAction;
     nonce: number;
   } | null>(null);
+  const [dailyBonusMessage, setDailyBonusMessage] = useState("");
   const activeReaction = reaction ? getBuddyActionReaction(reaction.action) : null;
+  const activeActionImageDataUrl = reaction
+    ? buddy.generatedActionImages?.[reaction.action]
+    : undefined;
+  const idleImageDataUrl = buddy.generatedActionImages?.idle ?? buddy.generatedImageDataUrl;
+  const buddyImageDataUrl = activeActionImageDataUrl ?? idleImageDataUrl;
+  const careMessage =
+    dailyBonusMessage || activeReaction?.message || returnMessage || getMoodText(mood);
 
   const handleAction = (action: BuddyAction) => {
     setReaction((currentReaction) => ({
       action,
       nonce: (currentReaction?.nonce ?? 0) + 1,
     }));
-    onChange(applyBuddyAction(buddy, action));
+    const actionBuddy = applyBuddyAction(buddy, action);
+    const dailyBonus = applyDailyCareBonus(actionBuddy);
+
+    setDailyBonusMessage(
+      dailyBonus.awarded
+        ? `오늘 첫 돌봄 보너스 +${dailyBonus.bonusExp} EXP, ${dailyBonus.streak}일째 만나는 중이에요.`
+        : "",
+    );
+    onChange(dailyBonus.buddy);
   };
 
   return (
@@ -73,13 +96,13 @@ export default function BuddyCarePanel({
                 {activeReaction.symbol}
               </span>
             ) : null}
-            {buddy.generatedImageDataUrl ? (
+            {buddyImageDataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={`${buddy.name} 버디`}
                 className={`buddy-float h-48 w-48 object-contain ${activeReaction?.animationClassName ?? ""}`}
                 key={reaction?.nonce ?? "generated-buddy"}
-                src={buddy.generatedImageDataUrl}
+                src={buddyImageDataUrl}
               />
             ) : (
               <div
@@ -99,7 +122,7 @@ export default function BuddyCarePanel({
             />
           </div>
           <p aria-live="polite" className="mt-3 text-sm text-zinc-500">
-            {activeReaction?.message ?? getMoodText(mood)}
+            {careMessage}
           </p>
 
           {storageWarning ? (
@@ -129,6 +152,7 @@ export default function BuddyCarePanel({
             <Status label="친밀도" tone="rose" value={buddy.stats.affection} />
             <Status label="배부름" tone="amber" value={buddy.stats.hunger} />
             <Status label="에너지" tone="sky" value={buddy.stats.energy} />
+            <Status label="연속 돌봄" suffix="일" tone="emerald" value={buddy.dailyCareStreak} />
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -156,29 +180,36 @@ export default function BuddyCarePanel({
 
 function Status({
   label,
+  suffix = "/100",
   tone,
   value,
 }: {
   label: string;
-  tone: "rose" | "amber" | "sky";
+  suffix?: string;
+  tone: "rose" | "amber" | "sky" | "emerald";
   value: number;
 }) {
   const colorClassName = {
     rose: "bg-rose-400",
     amber: "bg-amber-400",
     sky: "bg-sky-400",
+    emerald: "bg-emerald-400",
   }[tone];
+  const width = suffix === "/100" ? `${value}%` : `${Math.min(value * 12, 100)}%`;
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-sm font-bold">
         <span>{label}</span>
-        <span>{value}/100</span>
+        <span>
+          {value}
+          {suffix}
+        </span>
       </div>
       <div className="h-3 rounded-full bg-zinc-100">
         <div
           className={`h-3 rounded-full transition-all ${colorClassName}`}
-          style={{ width: `${value}%` }}
+          style={{ width }}
         />
       </div>
     </div>

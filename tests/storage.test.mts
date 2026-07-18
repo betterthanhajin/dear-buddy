@@ -114,6 +114,55 @@ test("loadSavedBuddy returns null for malformed saved data", async () => {
   assert.equal(await loadSavedBuddy(), null);
 });
 
+test("loadSavedBuddy migrates older saved buddies without daily loop fields", async () => {
+  const storage = useMemoryStorage();
+  storage.setItem(
+    "dear-buddy.saved-buddy.v1",
+    JSON.stringify({
+      id: "old-buddy",
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      createdAt: "2026-07-17T00:00:00.000Z",
+      updatedAt: "2026-07-17T00:00:00.000Z",
+      avatarProfile: {
+        bodyColor: "#c58b63",
+        accentColor: "#f2d0b5",
+        earShape: "round",
+        accessory: "ribbon",
+        cheekStyle: "oval",
+      },
+      stats: { affection: 35, hunger: 75, energy: 70, exp: 0 },
+    }),
+  );
+
+  const savedBuddy = await loadSavedBuddy(undefined, new Date("2026-07-17T01:00:00.000Z"));
+
+  assert.equal(savedBuddy?.lastCareAt, "2026-07-17T00:00:00.000Z");
+  assert.equal(savedBuddy?.lastDailyBonusAt, undefined);
+  assert.equal(savedBuddy?.dailyCareStreak, 0);
+});
+
+test("loadSavedBuddy applies passive decay to stale saved buddies", async () => {
+  const storage = useMemoryStorage();
+  const buddy = createBuddy(
+    {
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    },
+    new Date("2026-07-17T00:00:00.000Z"),
+  );
+  storage.setItem("dear-buddy.saved-buddy.v1", JSON.stringify(buddy));
+
+  const savedBuddy = await loadSavedBuddy(undefined, new Date("2026-07-18T06:00:00.000Z"));
+
+  assert.equal(savedBuddy?.stats.hunger, 55);
+  assert.equal(savedBuddy?.stats.energy, 55);
+  assert.equal(savedBuddy?.stats.affection, 33);
+  assert.equal(savedBuddy?.lastCareAt, "2026-07-18T06:00:00.000Z");
+});
+
 test("saveBuddy stores large generated images outside localStorage and restores them", async () => {
   useQuotaStorage(1800);
   const imageStore = createMemoryImageStore();
@@ -130,6 +179,38 @@ test("saveBuddy stores large generated images outside localStorage and restores 
 
   assert.equal(result.ok, true);
   assert.deepEqual(savedBuddy, buddy);
+});
+
+test("saveBuddy stores generated action images outside localStorage and restores them", async () => {
+  const storage = useQuotaStorage(2200);
+  const imageStore = createMemoryImageStore();
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+      generatedImageDataUrl: `data:image/png;base64,${"a".repeat(3000)}`,
+    }),
+    generatedActionImages: {
+      idle: `data:image/png;base64,${"i".repeat(3000)}`,
+      pet: `data:image/png;base64,${"p".repeat(3000)}`,
+      feed: `data:image/png;base64,${"f".repeat(3000)}`,
+      play: `data:image/png;base64,${"y".repeat(3000)}`,
+      rest: `data:image/png;base64,${"r".repeat(3000)}`,
+    },
+  };
+
+  const result = await saveBuddy(buddy, imageStore);
+  const savedBuddy = await loadSavedBuddy(imageStore);
+
+  assert.equal(result.ok, true);
+  assert.doesNotMatch(
+    storage.getItem("dear-buddy.saved-buddy.v1") ?? "",
+    /generatedActionImages/,
+  );
+  assert.deepEqual(savedBuddy?.generatedActionImages, buddy.generatedActionImages);
+  assert.equal(savedBuddy?.generatedImageDataUrl, buddy.generatedImageDataUrl);
 });
 
 test("saveBuddy falls back to the avatar profile when image storage fails", async () => {
@@ -157,6 +238,7 @@ test("saveBuddy falls back to the avatar profile when image storage fails", asyn
   assert.equal(result.ok, true);
   assert.equal(savedBuddy?.name, "몽실이");
   assert.equal(savedBuddy?.generatedImageDataUrl, undefined);
+  assert.equal(savedBuddy?.generatedActionImages, undefined);
   assert.deepEqual(savedBuddy?.stats, buddy.stats);
   assert.deepEqual(savedBuddy?.avatarProfile, buddy.avatarProfile);
 });

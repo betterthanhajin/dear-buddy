@@ -140,6 +140,9 @@ test("loadSavedBuddy migrates older saved buddies without daily loop fields", as
   assert.equal(savedBuddy?.lastCareAt, "2026-07-17T00:00:00.000Z");
   assert.equal(savedBuddy?.lastDailyBonusAt, undefined);
   assert.equal(savedBuddy?.dailyCareStreak, 0);
+  assert.equal(savedBuddy?.coins, 2530);
+  assert.deepEqual(savedBuddy?.inventory, {});
+  assert.equal(savedBuddy?.equippedRoomItemId, undefined);
 });
 
 test("loadSavedBuddy applies passive decay to stale saved buddies", async () => {

@@ -3,6 +3,9 @@ import {
   type Buddy,
   type BuddyActionImageKey,
   type BuddyActionImages,
+  type BuddyInventory,
+  type BuddyShopItemId,
+  SHOP_ITEMS,
 } from "./buddy.ts";
 
 const STORAGE_KEY = "dear-buddy.saved-buddy.v1";
@@ -343,6 +346,8 @@ function normalizeSavedBuddy(value: unknown): Buddy | null {
     updatedAt: candidate.updatedAt,
     lastCareAt: candidate.lastCareAt ?? candidate.updatedAt ?? candidate.createdAt,
     dailyCareStreak: candidate.dailyCareStreak ?? 0,
+    coins: typeof candidate.coins === "number" ? candidate.coins : 2530,
+    inventory: normalizeInventory(candidate.inventory),
     avatarProfile: candidate.avatarProfile as Buddy["avatarProfile"],
     stats: {
       affection: candidate.stats.affection,
@@ -360,11 +365,32 @@ function normalizeSavedBuddy(value: unknown): Buddy | null {
     buddy.generatedActionImages = candidate.generatedActionImages;
   }
 
+  if (
+    typeof candidate.equippedRoomItemId === "string" &&
+    candidate.equippedRoomItemId in SHOP_ITEMS
+  ) {
+    buddy.equippedRoomItemId = candidate.equippedRoomItemId as BuddyShopItemId;
+  }
+
   if (candidate.lastDailyBonusAt) {
     buddy.lastDailyBonusAt = candidate.lastDailyBonusAt;
   }
 
   return buddy;
+}
+
+function normalizeInventory(value: unknown): BuddyInventory {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.entries(value).reduce<BuddyInventory>((inventory, [itemId, count]) => {
+    if (itemId in SHOP_ITEMS && typeof count === "number" && count > 0) {
+      inventory[itemId as BuddyShopItemId] = count;
+    }
+
+    return inventory;
+  }, {});
 }
 
 function isActionImageMap(value: unknown): value is BuddyActionImages {

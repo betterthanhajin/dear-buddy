@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { normalizeBuddyAnalysis } from "@/lib/buddy-analysis";
 import {
   BUDDY_ACTION_IMAGE_KEYS,
+  type BuddyActionImageKey,
   type BuddyActionImages,
   extractGeneratedImageDataUrl,
   getGenerateBuddyImageRequestPayload,
@@ -34,8 +35,9 @@ export async function POST(request: Request) {
     const model = process.env.OPENAI_IMAGE_MODEL ?? DEFAULT_MODEL;
 
     if (body.actions === true) {
+      const actionKeys = getRequestedActionKeys(body.actionKeys);
       const entries = await Promise.all(
-        BUDDY_ACTION_IMAGE_KEYS.map(async (actionKey) => {
+        actionKeys.map(async (actionKey) => {
           const response = await fetch("https://api.openai.com/v1/images/generations", {
             method: "POST",
             headers: {
@@ -117,8 +119,27 @@ export async function POST(request: Request) {
 }
 
 function isGenerateImageRequest(value: unknown): value is {
+  actionKeys?: unknown;
   analysis: unknown;
   actions?: unknown;
 } {
   return !!value && typeof value === "object" && "analysis" in value;
+}
+
+function getRequestedActionKeys(value: unknown): readonly BuddyActionImageKey[] {
+  if (!value || typeof value !== "object") {
+    return BUDDY_ACTION_IMAGE_KEYS;
+  }
+
+  const actionKeys = (value as { actionKeys?: unknown }).actionKeys;
+
+  if (!Array.isArray(actionKeys)) {
+    return BUDDY_ACTION_IMAGE_KEYS;
+  }
+
+  const validActionKeys = actionKeys.filter((actionKey): actionKey is BuddyActionImageKey =>
+    BUDDY_ACTION_IMAGE_KEYS.includes(actionKey as BuddyActionImageKey),
+  );
+
+  return validActionKeys.length > 0 ? validActionKeys : BUDDY_ACTION_IMAGE_KEYS;
 }

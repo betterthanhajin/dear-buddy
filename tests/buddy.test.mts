@@ -5,8 +5,11 @@ import {
   applyBuddyAction,
   applyDailyCareBonus,
   applyTimeDecay,
+  buyBuddyItem,
+  claimMiniGameReward,
   createAvatarProfile,
   createBuddy,
+  equipBuddyRoomItem,
   getBuddyLevel,
   getBuddyMood,
 } from "../lib/buddy.ts";
@@ -26,6 +29,9 @@ test("createBuddy stores a named buddy with generated avatar profile and initial
   assert.equal(buddy.stats.hunger, 75);
   assert.equal(buddy.stats.energy, 70);
   assert.equal(buddy.stats.exp, 0);
+  assert.equal(buddy.coins, 2530);
+  assert.deepEqual(buddy.inventory, {});
+  assert.equal(buddy.equippedRoomItemId, undefined);
 });
 
 test("applyBuddyAction updates stats and clamps values", () => {
@@ -48,6 +54,74 @@ test("applyBuddyAction updates stats and clamps values", () => {
   );
 
   assert.equal(rested.stats.energy, 100);
+});
+
+test("buyBuddyItem spends coins and adds the item to inventory", () => {
+  const buddy = createBuddy({
+    name: "몽실이",
+    photoDataUrl: "data:image/png;base64,abc",
+    dominantColor: "#c58b63",
+    accentColor: "#f2d0b5",
+  });
+
+  const result = buyBuddyItem(buddy, "fish-snack");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.buddy.coins, 2410);
+  assert.equal(result.buddy.inventory["fish-snack"], 1);
+  assert.equal(result.message, "생선 간식을 구매했어요.");
+});
+
+test("buyBuddyItem rejects purchases when coins are too low", () => {
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    }),
+    coins: 10,
+  };
+
+  const result = buyBuddyItem(buddy, "pink-rug");
+
+  assert.equal(result.ok, false);
+  assert.equal(result.buddy, buddy);
+  assert.equal(result.message, "코인이 부족해요.");
+});
+
+test("equipBuddyRoomItem equips an owned room item", () => {
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    }),
+    inventory: { "pink-rug": 1 },
+  };
+
+  const result = equipBuddyRoomItem(buddy, "pink-rug");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.buddy.equippedRoomItemId, "pink-rug");
+  assert.equal(result.message, "핑크 러그를 방에 배치했어요.");
+});
+
+test("claimMiniGameReward grants coins, experience, and a beach ball", () => {
+  const buddy = createBuddy({
+    name: "몽실이",
+    photoDataUrl: "data:image/png;base64,abc",
+    dominantColor: "#c58b63",
+    accentColor: "#f2d0b5",
+  });
+
+  const result = claimMiniGameReward(buddy);
+
+  assert.equal(result.buddy.coins, 2560);
+  assert.equal(result.buddy.stats.exp, 12);
+  assert.equal(result.buddy.inventory["beach-ball"], 1);
+  assert.equal(result.message, "공놀이 성공! 코인 +30, 경험치 +12를 받았어요.");
 });
 
 test("getBuddyLevel derives level and progress from total experience", () => {

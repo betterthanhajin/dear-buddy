@@ -1,11 +1,856 @@
 @import "tailwindcss";
 
+:root {
+  --retro-ink: #43342e;
+  --retro-muted: #8b746b;
+  --retro-line: #d9bfb1;
+  --retro-line-dark: #8a786f;
+  --retro-cream: #fff8ef;
+  --retro-panel: #fff3e8;
+  --retro-pink: #ffd6d3;
+  --retro-pink-strong: #f7a8a7;
+  --retro-green: #8ed08d;
+  --retro-blue: #9fc1ef;
+  --retro-yellow: #ffd77d;
+}
+
 html {
-  background: #f7f2ec;
+  background: #f8efe5;
 }
 
 body {
   min-width: 320px;
+  color: var(--retro-ink);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 211, 204, 0.42), transparent 34rem),
+    linear-gradient(180deg, #fff8f0 0%, #f6eadf 100%);
+  font-family: "Courier New", var(--font-geist-sans), monospace;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+.retro-page {
+  min-height: 100svh;
+  padding: 18px;
+}
+
+.retro-shell,
+.retro-profile-app {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  border: 2px solid var(--retro-line);
+  border-radius: 24px;
+  background: rgba(255, 250, 243, 0.88);
+  box-shadow: 0 18px 45px rgba(84, 58, 47, 0.14);
+}
+
+.retro-shell {
+  display: grid;
+  gap: 22px;
+  padding: 22px;
+}
+
+.retro-shell-creator {
+  grid-template-columns: minmax(0, 0.95fr) minmax(340px, 1fr);
+  align-items: center;
+}
+
+.retro-copy {
+  padding: 18px;
+}
+
+.retro-kicker {
+  color: #c87376;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.retro-copy h1 {
+  max-width: 560px;
+  margin-top: 14px;
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.retro-copy p {
+  max-width: 560px;
+  margin-top: 18px;
+  color: var(--retro-muted);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.retro-device {
+  border: 3px solid #f2b8b4;
+  border-radius: 34px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.8), transparent 30%),
+    var(--retro-pink);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.55),
+    0 14px 0 #d58b91,
+    0 22px 28px rgba(96, 56, 52, 0.18);
+}
+
+.retro-device-form {
+  padding: 18px;
+}
+
+.retro-device-top,
+.retro-topbar,
+.retro-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.retro-device-top {
+  padding: 0 8px 12px;
+  color: #8f5d5f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.retro-screen,
+.retro-crt-screen {
+  position: relative;
+  overflow: hidden;
+  border: 6px solid #251f1e;
+  border-radius: 28px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(55, 83, 95, 0.08) 0,
+      rgba(55, 83, 95, 0.08) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    #fffaf0;
+  box-shadow:
+    inset 0 0 22px rgba(45, 70, 77, 0.28),
+    inset 0 0 0 3px #6f5f58;
+}
+
+.retro-screen-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.retro-label,
+.retro-preview-title {
+  display: block;
+  color: var(--retro-ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.retro-upload,
+.retro-input,
+.retro-primary-button,
+.retro-back-button,
+.retro-heart-pill,
+.retro-tabs button,
+.retro-action-card,
+.retro-bottom-nav,
+.retro-coin {
+  border: 2px solid var(--retro-line);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.retro-upload {
+  display: flex;
+  min-height: 104px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  border-style: dashed;
+  border-radius: 18px;
+  background: #fff4eb;
+  color: var(--retro-muted);
+  cursor: pointer;
+}
+
+.retro-alert {
+  border: 2px solid var(--retro-line);
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.retro-alert-error {
+  background: #ffe4e4;
+  color: #9e464d;
+}
+
+.retro-alert-warn,
+.retro-alert-live {
+  background: #fff2d9;
+  color: #8a6040;
+}
+
+.retro-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.retro-preview-panel {
+  display: flex;
+  aspect-ratio: 1;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  border: 2px solid var(--retro-line);
+  border-radius: 18px;
+  background: #fff8f0;
+  padding: 10px;
+}
+
+.retro-field {
+  display: block;
+}
+
+.retro-input {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 14px;
+  background: #fffaf4;
+  padding: 12px 14px;
+  color: var(--retro-ink);
+  outline: none;
+}
+
+.retro-input:focus,
+.retro-upload:hover,
+.retro-action-card:hover,
+.retro-tabs button.is-active,
+.retro-collection-tile.is-active,
+.retro-flow-step.is-active {
+  border-color: #72b276;
+}
+
+.retro-primary-button {
+  width: 100%;
+  margin-top: 16px;
+  border-radius: 20px;
+  background: linear-gradient(#ffb8b8, #f49599);
+  padding: 15px;
+  color: #6f393f;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.45),
+    0 6px 0 #c87680;
+}
+
+.retro-primary-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.55);
+  opacity: 0.7;
+}
+
+.retro-profile-app {
+  padding: 18px;
+}
+
+.retro-topbar {
+  min-height: 72px;
+}
+
+.retro-back-button {
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+  background: linear-gradient(#ffc0c0, #f0989f);
+  color: #72464a;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.retro-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 900;
+}
+
+.retro-title-mark {
+  width: 6px;
+  height: 6px;
+  background: #d8aaa1;
+  box-shadow:
+    -8px -8px 0 #e6c1ba,
+    8px -8px 0 #e6c1ba,
+    -8px 8px 0 #e6c1ba,
+    8px 8px 0 #e6c1ba;
+}
+
+.retro-heart-pill,
+.retro-coin {
+  border-radius: 14px;
+  background: #fff8f1;
+  padding: 10px 16px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.retro-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 10px;
+}
+
+.retro-tabs button {
+  min-height: 62px;
+  border-radius: 18px 18px 0 0;
+  background: #fff3ea;
+  color: var(--retro-ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.retro-tabs button.is-active {
+  background: #ffe0dc;
+  border-bottom-color: #ffe0dc;
+}
+
+.retro-profile-panel {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.08fr) minmax(280px, 0.92fr);
+  gap: 18px;
+  border: 3px solid #ffc6c4;
+  border-radius: 24px;
+  background: #fff3ea;
+  padding: 18px;
+}
+
+.retro-crt-device {
+  border: 3px solid #f2b8b4;
+  border-radius: 30px;
+  background: var(--retro-pink);
+  padding: 18px;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.55);
+}
+
+.retro-crt-screen {
+  min-height: 330px;
+  padding: 20px;
+}
+
+.retro-crt-hud {
+  display: flex;
+  justify-content: space-between;
+  color: #1f596e;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.retro-buddy-stage {
+  position: relative;
+  display: flex;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+}
+
+.retro-buddy-image,
+.retro-buddy-svg {
+  width: min(70%, 230px);
+  height: min(70%, 230px);
+  object-fit: contain;
+}
+
+.retro-reaction-badge {
+  right: 16%;
+  top: 14%;
+}
+
+.retro-mini-bars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.retro-mini-stat,
+.retro-stat-track,
+.retro-progress-track {
+  display: block;
+  overflow: hidden;
+  border: 2px solid #4b413c;
+  border-radius: 999px;
+  background: #fffaf4;
+  padding: 3px;
+}
+
+.retro-mini-stat i,
+.retro-stat-track i,
+.retro-progress-track div {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.retro-mini-stat.is-pink i,
+.retro-stat-track .is-rose {
+  background: #ff9da6;
+}
+
+.retro-mini-stat.is-green i,
+.retro-stat-track .is-amber {
+  background: #a7d995;
+}
+
+.retro-mini-stat.is-blue i,
+.retro-stat-track .is-sky {
+  background: #a8c6f2;
+}
+
+.retro-card {
+  border: 2px solid var(--retro-line);
+  border-radius: 20px;
+  background: rgba(255, 248, 240, 0.86);
+  padding: 18px;
+}
+
+.retro-card h2 {
+  margin-bottom: 14px;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.retro-bio-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.retro-bio-heading h1 {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.retro-bio-heading span {
+  color: var(--retro-muted);
+  font-size: 13px;
+}
+
+.retro-bio-grid,
+.retro-info-list {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 11px 16px;
+  margin-top: 18px;
+  font-size: 15px;
+}
+
+.retro-bio-grid dt,
+.retro-info-list dt {
+  color: #765f57;
+  font-weight: 900;
+}
+
+.retro-bio-grid dd,
+.retro-info-list dd {
+  text-align: right;
+}
+
+.retro-divider {
+  height: 2px;
+  margin: 18px 0;
+  background: repeating-linear-gradient(90deg, var(--retro-line) 0 8px, transparent 8px 14px);
+}
+
+.retro-stat-row + .retro-stat-row {
+  margin-top: 12px;
+}
+
+.retro-stat-row > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.retro-level-row {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+  font-weight: 900;
+}
+
+.retro-progress-track div {
+  background: #ff9da6;
+}
+
+.retro-message {
+  margin: 14px 0;
+  border: 2px solid var(--retro-line);
+  border-radius: 18px;
+  background: #fff8ef;
+  padding: 13px 16px;
+  color: #6d554d;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.retro-growth-card,
+.retro-grid-panels,
+.retro-collection-card,
+.retro-bottom-nav {
+  margin-top: 16px;
+}
+
+.retro-flow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.retro-flow-step,
+.retro-collection-tile {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  border: 2px solid var(--retro-line);
+  border-radius: 14px;
+  background: #fff6ef;
+  padding: 10px;
+  text-align: center;
+}
+
+.retro-flow-step div,
+.retro-collection-tile div {
+  display: flex;
+  width: 72px;
+  height: 72px;
+  align-items: center;
+  justify-content: center;
+}
+
+.retro-flow-step img,
+.retro-collection-tile img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.retro-flow-step span,
+.retro-collection-tile span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.retro-placeholder {
+  color: #b9a69e;
+  font-size: 28px;
+}
+
+.retro-grid-panels {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 16px;
+}
+
+.retro-info-list {
+  grid-template-columns: 90px 1fr;
+  font-size: 14px;
+}
+
+.retro-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.retro-action-card {
+  min-height: 92px;
+  border-radius: 16px;
+  background: #fff7ef;
+  padding: 13px;
+  text-align: left;
+}
+
+.retro-action-card:disabled,
+.retro-buy-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.retro-action-card.is-equipped {
+  border-color: #72b276;
+  background: #f0faea;
+}
+
+.retro-action-card span {
+  display: block;
+  color: var(--retro-ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.retro-action-card small {
+  display: block;
+  margin-top: 7px;
+  color: var(--retro-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.retro-collection-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
+  gap: 12px;
+}
+
+.retro-collection-tile strong {
+  font-size: 14px;
+}
+
+.retro-bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr) minmax(110px, 0.9fr);
+  gap: 8px;
+  align-items: center;
+  border-radius: 20px;
+  background: #fff8f0;
+  padding: 10px;
+}
+
+.retro-bottom-nav button {
+  border-radius: 14px;
+  padding: 10px 4px;
+  color: var(--retro-ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.retro-bottom-nav button.is-active {
+  background: #ffe0dc;
+}
+
+.retro-coin {
+  padding: 9px 12px;
+  text-align: right;
+}
+
+.retro-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.retro-shop-card {
+  display: grid;
+  gap: 10px;
+  border: 2px solid var(--retro-line);
+  border-radius: 18px;
+  background: #fff7ef;
+  padding: 14px;
+  text-align: center;
+}
+
+.retro-shop-card h3 {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.retro-shop-card p {
+  min-height: 48px;
+  color: var(--retro-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.retro-shop-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #765f57;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.retro-buy-button {
+  border: 2px solid #cb8588;
+  border-radius: 12px;
+  background: linear-gradient(#ffc2c2, #f49ba1);
+  padding: 9px;
+  color: #6f393f;
+  font-weight: 900;
+}
+
+.retro-item-sprite {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto;
+  border: 2px solid #4b413c;
+  image-rendering: pixelated;
+}
+
+.retro-item-sprite.is-fish-snack {
+  border-radius: 55% 45% 48% 52%;
+  background:
+    radial-gradient(circle at 35% 42%, #20384b 0 4px, transparent 5px),
+    linear-gradient(135deg, transparent 0 66%, #7eb6d8 67% 100%),
+    #9fcce6;
+}
+
+.retro-item-sprite.is-pink-rug {
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.36) 0 3px, transparent 3px 8px),
+    #f8b7bd;
+}
+
+.retro-item-sprite.is-beach-ball {
+  border-radius: 50%;
+  background:
+    linear-gradient(120deg, transparent 0 42%, #fff5ef 43% 57%, transparent 58%),
+    linear-gradient(40deg, #f28f98 0 50%, #f7d5d2 51% 100%);
+}
+
+.retro-room-preview {
+  position: relative;
+  min-height: 300px;
+  overflow: hidden;
+  border: 6px solid #251f1e;
+  border-radius: 24px;
+  background:
+    linear-gradient(#ffe9df 0 58%, #e7c9b5 59% 100%),
+    repeating-linear-gradient(90deg, rgba(205, 150, 140, 0.18) 0 2px, transparent 2px 50px);
+  box-shadow: inset 0 0 24px rgba(45, 70, 77, 0.25);
+}
+
+.retro-room-window {
+  position: absolute;
+  right: 13%;
+  top: 18%;
+  width: 96px;
+  height: 70px;
+  border: 4px solid #9b6f58;
+  background: linear-gradient(#9fd0ec 0 50%, #fff7ef 51% 100%);
+}
+
+.retro-room-shelf {
+  position: absolute;
+  left: 12%;
+  top: 25%;
+  width: 110px;
+  height: 8px;
+  border: 2px solid #8c634c;
+  background: #b88560;
+}
+
+.retro-room-rug {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 190px;
+  height: 70px;
+  transform: translateX(-50%);
+  border: 3px solid #df9ca2;
+  border-radius: 50%;
+  background: #f8d2d4;
+  opacity: 0.35;
+}
+
+.retro-room-preview.has-pink-rug .retro-room-rug {
+  opacity: 1;
+}
+
+.retro-room-buddy {
+  position: absolute;
+  left: 50%;
+  bottom: 24%;
+  width: 130px;
+  height: 130px;
+  transform: translateX(-50%);
+}
+
+.retro-room-buddy img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.retro-mini-game {
+  display: grid;
+  gap: 14px;
+}
+
+.retro-game-screen {
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
+  border: 6px solid #251f1e;
+  border-radius: 24px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(55, 83, 95, 0.08) 0,
+      rgba(55, 83, 95, 0.08) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    linear-gradient(#bfe1f3 0 55%, #ffe8bd 56% 100%);
+}
+
+.retro-game-ball {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  border: 3px solid #4b413c;
+  border-radius: 50%;
+  background:
+    linear-gradient(120deg, transparent 0 42%, #fff5ef 43% 57%, transparent 58%),
+    linear-gradient(40deg, #f28f98 0 50%, #f7d5d2 51% 100%);
+}
+
+.retro-game-snack {
+  position: absolute;
+  right: 22%;
+  top: 25%;
+  width: 42px;
+  height: 24px;
+  border: 3px solid #4b413c;
+  border-radius: 50%;
+  background: #efae80;
+}
+
+.retro-game-score {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  border: 2px solid #d9a286;
+  border-radius: 12px;
+  background: #fff8ef;
+  padding: 8px 12px;
+  color: #1f596e;
+  font-weight: 900;
 }
 
 @keyframes buddy-float {
@@ -112,35 +957,107 @@ body {
 }
 
 .buddy-reaction-badge {
+  position: absolute;
+  z-index: 10;
+  border: 2px solid var(--retro-line);
+  border-radius: 999px;
+  background: #fff8ef;
+  padding: 4px 10px;
+  color: #c55f6a;
+  font-size: 14px;
+  font-weight: 900;
   animation: buddy-reaction-badge 900ms ease-out forwards;
 }
 
-@keyframes gentle-pop {
-  0% {
-    transform: scale(0.96);
+@media (max-width: 820px) {
+  .retro-page {
+    padding: 10px;
   }
 
-  100% {
-    transform: scale(1);
-  }
-}
-
-.gentle-pop {
-  animation: gentle-pop 180ms ease-out;
-}
-
-@keyframes heart-pop {
-  0% {
-    opacity: 0;
-    transform: translateY(0) scale(0.7);
+  .retro-shell-creator,
+  .retro-profile-panel,
+  .retro-grid-panels {
+    grid-template-columns: 1fr;
   }
 
-  20% {
-    opacity: 1;
+  .retro-shell,
+  .retro-profile-app {
+    border-radius: 18px;
+    padding: 12px;
   }
 
-  100% {
-    opacity: 0;
-    transform: translateY(-40px) scale(1.3);
+  .retro-copy {
+    padding: 4px;
+  }
+
+  .retro-copy h1 {
+    font-size: 34px;
+  }
+
+  .retro-topbar {
+    min-height: 58px;
+  }
+
+  .retro-title {
+    gap: 8px;
+    font-size: 30px;
+  }
+
+  .retro-heart-pill {
+    padding: 8px 11px;
+    font-size: 18px;
+  }
+
+  .retro-back-button {
+    width: 46px;
+    height: 46px;
+  }
+
+  .retro-tabs button {
+    min-height: 50px;
+    font-size: 14px;
+  }
+
+  .retro-profile-panel {
+    padding: 10px;
+  }
+
+  .retro-crt-device {
+    padding: 10px;
+  }
+
+  .retro-crt-screen {
+    min-height: 280px;
+    padding: 16px;
+  }
+
+  .retro-buddy-stage {
+    min-height: 180px;
+  }
+
+  .retro-flow,
+  .retro-collection-row,
+  .retro-shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .retro-action-grid,
+  .retro-bottom-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .retro-coin {
+    grid-column: span 2;
+  }
+
+  .retro-bio-grid,
+  .retro-info-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .retro-bio-grid dd,
+  .retro-info-list dd {
+    text-align: left;
   }
 }

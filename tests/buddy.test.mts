@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   applyBuddyAction,
+  applyDailyCareBonus,
+  applyTimeDecay,
   createAvatarProfile,
   createBuddy,
   getBuddyLevel,
@@ -73,4 +75,96 @@ test("createAvatarProfile is deterministic for the same seed", () => {
   });
 
   assert.deepEqual(first, second);
+});
+
+test("applyTimeDecay gently lowers stats after full six hour blocks", () => {
+  const buddy = createBuddy(
+    {
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    },
+    new Date("2026-07-17T00:00:00.000Z"),
+  );
+
+  const result = applyTimeDecay(buddy, new Date("2026-07-18T06:30:00.000Z"));
+
+  assert.equal(result.elapsedHours, 30);
+  assert.equal(result.didDecay, true);
+  assert.equal(result.buddy.stats.hunger, 55);
+  assert.equal(result.buddy.stats.energy, 55);
+  assert.equal(result.buddy.stats.affection, 33);
+  assert.equal(result.buddy.lastCareAt, "2026-07-18T06:30:00.000Z");
+});
+
+test("applyTimeDecay does not lower passive stats below ten", () => {
+  const buddy = {
+    ...createBuddy(
+      {
+        name: "몽실이",
+        photoDataUrl: "data:image/png;base64,abc",
+        dominantColor: "#c58b63",
+        accentColor: "#f2d0b5",
+      },
+      new Date("2026-07-10T00:00:00.000Z"),
+    ),
+    stats: { affection: 12, hunger: 12, energy: 12, exp: 0 },
+  };
+
+  const result = applyTimeDecay(buddy, new Date("2026-07-18T00:00:00.000Z"));
+
+  assert.deepEqual(result.buddy.stats, {
+    affection: 10,
+    hunger: 10,
+    energy: 10,
+    exp: 0,
+  });
+});
+
+test("applyDailyCareBonus awards once per local day and increases streak", () => {
+  const buddy = createBuddy(
+    {
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    },
+    new Date("2026-07-17T08:00:00.000+09:00"),
+  );
+
+  const first = applyDailyCareBonus(buddy, new Date("2026-07-17T09:00:00.000+09:00"));
+  const duplicate = applyDailyCareBonus(first.buddy, new Date("2026-07-17T21:00:00.000+09:00"));
+  const nextDay = applyDailyCareBonus(first.buddy, new Date("2026-07-18T09:00:00.000+09:00"));
+
+  assert.equal(first.awarded, true);
+  assert.equal(first.bonusExp, 10);
+  assert.equal(first.streak, 1);
+  assert.equal(duplicate.awarded, false);
+  assert.equal(duplicate.bonusExp, 0);
+  assert.equal(nextDay.awarded, true);
+  assert.equal(nextDay.streak, 2);
+  assert.equal(nextDay.buddy.stats.exp, 20);
+});
+
+test("applyDailyCareBonus resets streak after missing a local day", () => {
+  const buddy = {
+    ...createBuddy(
+      {
+        name: "몽실이",
+        photoDataUrl: "data:image/png;base64,abc",
+        dominantColor: "#c58b63",
+        accentColor: "#f2d0b5",
+      },
+      new Date("2026-07-15T08:00:00.000+09:00"),
+    ),
+    dailyCareStreak: 3,
+    lastDailyBonusAt: "2026-07-15T08:00:00.000+09:00",
+  };
+
+  const result = applyDailyCareBonus(buddy, new Date("2026-07-18T09:00:00.000+09:00"));
+
+  assert.equal(result.awarded, true);
+  assert.equal(result.streak, 1);
+  assert.equal(result.buddy.dailyCareStreak, 1);
 });

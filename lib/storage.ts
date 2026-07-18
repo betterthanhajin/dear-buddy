@@ -1,4 +1,9 @@
-import type { Buddy } from "./buddy";
+import {
+  applyTimeDecay,
+  type Buddy,
+  type BuddyActionImageKey,
+  type BuddyActionImages,
+} from "./buddy.ts";
 
 const STORAGE_KEY = "dear-buddy.saved-buddy.v1";
 const DB_NAME = "dear-buddy";
@@ -6,11 +11,17 @@ const DB_VERSION = 1;
 const IMAGE_STORE_NAME = "generated-buddy-images";
 
 type SaveResult = { ok: true } | { ok: false; error: string };
+type LoadResult = {
+  buddy: Buddy | null;
+  returnMessage: string;
+};
 export type BuddyImageStore = {
   delete: (id: string) => Promise<void>;
   load: (id: string) => Promise<string | undefined>;
   save: (id: string, imageDataUrl: string) => Promise<void>;
 };
+
+const ACTION_IMAGE_KEYS: BuddyActionImageKey[] = ["idle", "pet", "feed", "play", "rest"];
 
 const indexedDbBuddyImageStore: BuddyImageStore = {
   async delete(id) {
@@ -57,30 +68,51 @@ const indexedDbBuddyImageStore: BuddyImageStore = {
 
 export async function loadSavedBuddy(
   imageStore: BuddyImageStore = indexedDbBuddyImageStore,
+  nowDate = new Date(),
 ): Promise<Buddy | null> {
+  const result = await loadSavedBuddyWithStatus(imageStore, nowDate);
+  return result.buddy;
+}
+
+export async function loadSavedBuddyWithStatus(
+  imageStore: BuddyImageStore = indexedDbBuddyImageStore,
+  nowDate = new Date(),
+): Promise<LoadResult> {
   if (!hasLocalStorage()) {
-    return null;
+    return { buddy: null, returnMessage: "" };
   }
 
   try {
     const savedValue = localStorage.getItem(STORAGE_KEY);
 
     if (!savedValue) {
-      return null;
+      return { buddy: null, returnMessage: "" };
     }
 
     const parsedValue: unknown = JSON.parse(savedValue);
-    if (!isBuddy(parsedValue)) {
-      return null;
+    const parsedBuddy = normalizeSavedBuddy(parsedValue);
+    if (!parsedBuddy) {
+      return { buddy: null, returnMessage: "" };
     }
 
-    const generatedImageDataUrl = parsedValue.generatedImageDataUrl ?? await imageStore.load(parsedValue.id);
+    const generatedImageDataUrl = parsedBuddy.generatedImageDataUrl ?? await imageStore.load(parsedBuddy.id);
+    const generatedActionImages =
+      parsedBuddy.generatedActionImages ?? await loadGeneratedActionImages(parsedBuddy.id, imageStore);
+    const buddy = generatedImageDataUrl
+      ? addOptionalActionImages({ ...parsedBuddy, generatedImageDataUrl }, generatedActionImages)
+      : addOptionalActionImages(parsedBuddy, generatedActionImages);
+    const decayed = applyTimeDecay(buddy, nowDate);
 
-    return generatedImageDataUrl
-      ? { ...parsedValue, generatedImageDataUrl }
-      : parsedValue;
+    if (decayed.didDecay) {
+      await saveBuddy(decayed.buddy, imageStore);
+    }
+
+    return {
+      buddy: decayed.buddy,
+      returnMessage: getReturnMessage(decayed.elapsedHours, decayed.didDecay),
+    };
   } catch {
-    return null;
+    return { buddy: null, returnMessage: "" };
   }
 }
 
@@ -93,7 +125,11 @@ export async function saveBuddy(
   }
 
   const imageStored = await storeGeneratedImage(buddy, imageStore);
-  const localBuddy = imageStored ? removeGeneratedImage(buddy) : buddy;
+  const actionImagesStored = await storeGeneratedActionImages(buddy, imageStore);
+  const localBuddy = removeStoredImages(buddy, {
+    removeGeneratedImage: imageStored,
+    removeActionImages: actionImagesStored,
+  });
 
   for (const candidate of getStorageCandidates(localBuddy)) {
     try {
@@ -120,6 +156,9 @@ export async function clearSavedBuddy(
 
   if (savedBuddyId) {
     await imageStore.delete(savedBuddyId);
+    await Promise.all(
+      ACTION_IMAGE_KEYS.map((actionKey) => imageStore.delete(getActionImageId(savedBuddyId, actionKey))),
+    );
   }
 }
 
@@ -155,11 +194,17 @@ function runRequest<T>(request: IDBRequest<T>) {
 }
 
 function getStorageCandidates(buddy: Buddy): Buddy[] {
-  if (!buddy.generatedImageDataUrl) {
+  if (!buddy.generatedImageDataUrl && !buddy.generatedActionImages) {
     return [buddy];
   }
 
-  return [buddy, removeGeneratedImage(buddy)];
+  return [
+    buddy,
+    removeStoredImages(buddy, {
+      removeActionImages: true,
+      removeGeneratedImage: true,
+    }),
+  ];
 }
 
 async function storeGeneratedImage(buddy: Buddy, imageStore: BuddyImageStore) {
@@ -175,11 +220,74 @@ async function storeGeneratedImage(buddy: Buddy, imageStore: BuddyImageStore) {
   }
 }
 
-function removeGeneratedImage(buddy: Buddy): Buddy {
-  const buddyWithoutGeneratedImage = { ...buddy };
-  delete buddyWithoutGeneratedImage.generatedImageDataUrl;
+async function loadGeneratedActionImages(buddyId: string, imageStore: BuddyImageStore) {
+  const entries = await Promise.all(
+    ACTION_IMAGE_KEYS.map(async (actionKey) => {
+      const imageDataUrl = await imageStore.load(getActionImageId(buddyId, actionKey));
+      return [actionKey, imageDataUrl] as const;
+    }),
+  );
+  const actionImages = entries.reduce<BuddyActionImages>((images, [actionKey, imageDataUrl]) => {
+    if (imageDataUrl) {
+      images[actionKey] = imageDataUrl;
+    }
 
-  return buddyWithoutGeneratedImage;
+    return images;
+  }, {});
+
+  return Object.keys(actionImages).length > 0 ? actionImages : undefined;
+}
+
+async function storeGeneratedActionImages(buddy: Buddy, imageStore: BuddyImageStore) {
+  if (!buddy.generatedActionImages) {
+    return false;
+  }
+
+  try {
+    await Promise.all(
+      ACTION_IMAGE_KEYS.map(async (actionKey) => {
+        const imageDataUrl = buddy.generatedActionImages?.[actionKey];
+
+        if (imageDataUrl) {
+          await imageStore.save(getActionImageId(buddy.id, actionKey), imageDataUrl);
+        }
+      }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeStoredImages(
+  buddy: Buddy,
+  {
+    removeActionImages,
+    removeGeneratedImage,
+  }: {
+    removeActionImages: boolean;
+    removeGeneratedImage: boolean;
+  },
+): Buddy {
+  const buddyWithoutStoredImages = { ...buddy };
+
+  if (removeGeneratedImage) {
+    delete buddyWithoutStoredImages.generatedImageDataUrl;
+  }
+
+  if (removeActionImages) {
+    delete buddyWithoutStoredImages.generatedActionImages;
+  }
+
+  return buddyWithoutStoredImages;
+}
+
+function getActionImageId(buddyId: string, actionKey: BuddyActionImageKey) {
+  return `${buddyId}:action:${actionKey}`;
+}
+
+function addOptionalActionImages(buddy: Buddy, actionImages: BuddyActionImages | undefined): Buddy {
+  return actionImages ? { ...buddy, generatedActionImages: actionImages } : buddy;
 }
 
 function getSavedBuddyId() {
@@ -191,34 +299,99 @@ function getSavedBuddyId() {
     }
 
     const parsedValue: unknown = JSON.parse(savedValue);
-    return isBuddy(parsedValue) ? parsedValue.id : undefined;
+    const buddy = normalizeSavedBuddy(parsedValue);
+    return buddy ? buddy.id : undefined;
   } catch {
     return undefined;
   }
 }
 
-function isBuddy(value: unknown): value is Buddy {
+function normalizeSavedBuddy(value: unknown): Buddy | null {
   if (!value || typeof value !== "object") {
-    return false;
+    return null;
   }
 
   const candidate = value as Partial<Buddy>;
 
-  return (
-    typeof candidate.id === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.photoDataUrl === "string" &&
-    (typeof candidate.generatedImageDataUrl === "undefined" ||
-      typeof candidate.generatedImageDataUrl === "string") &&
-    typeof candidate.createdAt === "string" &&
-    typeof candidate.updatedAt === "string" &&
-    !!candidate.avatarProfile &&
-    typeof candidate.avatarProfile === "object" &&
-    !!candidate.stats &&
-    typeof candidate.stats === "object" &&
-    typeof candidate.stats.affection === "number" &&
-    typeof candidate.stats.hunger === "number" &&
-    typeof candidate.stats.energy === "number" &&
-    typeof candidate.stats.exp === "number"
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.name !== "string" ||
+    typeof candidate.photoDataUrl !== "string" ||
+    (typeof candidate.generatedImageDataUrl !== "undefined" &&
+      typeof candidate.generatedImageDataUrl !== "string") ||
+    (typeof candidate.generatedActionImages !== "undefined" &&
+      !isActionImageMap(candidate.generatedActionImages)) ||
+    typeof candidate.createdAt !== "string" ||
+    typeof candidate.updatedAt !== "string" ||
+    !candidate.avatarProfile ||
+    typeof candidate.avatarProfile !== "object" ||
+    !candidate.stats ||
+    typeof candidate.stats !== "object" ||
+    typeof candidate.stats.affection !== "number" ||
+    typeof candidate.stats.hunger !== "number" ||
+    typeof candidate.stats.energy !== "number" ||
+    typeof candidate.stats.exp !== "number"
+  ) {
+    return null;
+  }
+
+  const buddy: Buddy = {
+    id: candidate.id,
+    name: candidate.name,
+    photoDataUrl: candidate.photoDataUrl,
+    createdAt: candidate.createdAt,
+    updatedAt: candidate.updatedAt,
+    lastCareAt: candidate.lastCareAt ?? candidate.updatedAt ?? candidate.createdAt,
+    dailyCareStreak: candidate.dailyCareStreak ?? 0,
+    avatarProfile: candidate.avatarProfile as Buddy["avatarProfile"],
+    stats: {
+      affection: candidate.stats.affection,
+      hunger: candidate.stats.hunger,
+      energy: candidate.stats.energy,
+      exp: candidate.stats.exp,
+    },
+  };
+
+  if (candidate.generatedImageDataUrl) {
+    buddy.generatedImageDataUrl = candidate.generatedImageDataUrl;
+  }
+
+  if (candidate.generatedActionImages) {
+    buddy.generatedActionImages = candidate.generatedActionImages;
+  }
+
+  if (candidate.lastDailyBonusAt) {
+    buddy.lastDailyBonusAt = candidate.lastDailyBonusAt;
+  }
+
+  return buddy;
+}
+
+function isActionImageMap(value: unknown): value is BuddyActionImages {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return Object.entries(candidate).every(
+    ([key, imageDataUrl]) =>
+      ACTION_IMAGE_KEYS.includes(key as BuddyActionImageKey) &&
+      typeof imageDataUrl === "string",
   );
+}
+
+function getReturnMessage(elapsedHours: number, didDecay: boolean) {
+  if (!didDecay) {
+    return "";
+  }
+
+  if (elapsedHours >= 24) {
+    const days = Math.floor(elapsedHours / 24);
+    return days > 1
+      ? `${days}일 만에 다시 만났어요. 버디가 조용히 기다리고 있었어요.`
+      : "하루 만에 다시 만났어요. 버디가 조금 배고파졌어요.";
+  }
+
+  return "잠시 떨어져 있는 동안 버디가 조금 쉬고 있었어요.";
 }

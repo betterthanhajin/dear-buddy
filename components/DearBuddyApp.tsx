@@ -6,7 +6,7 @@ import BuddyCarePanel from "@/components/BuddyCarePanel";
 import BuddyCreator from "@/components/BuddyCreator";
 import type { Buddy } from "@/lib/buddy";
 import { createBuddy } from "@/lib/buddy";
-import { clearSavedBuddy, loadSavedBuddy, saveBuddy } from "@/lib/storage";
+import { clearSavedBuddy, loadSavedBuddyWithStatus, saveBuddy } from "@/lib/storage";
 
 type CreateBuddyPayload = Parameters<typeof BuddyCreator>[0]["onCreate"] extends (
   input: infer Input,
@@ -17,13 +17,15 @@ type CreateBuddyPayload = Parameters<typeof BuddyCreator>[0]["onCreate"] extends
 export default function DearBuddyApp() {
   const [buddy, setBuddy] = useState<Buddy | null>(null);
   const [storageWarning, setStorageWarning] = useState("");
+  const [returnMessage, setReturnMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
-    loadSavedBuddy().then((savedBuddy) => {
+    loadSavedBuddyWithStatus().then((result) => {
       if (isMounted) {
-        setBuddy(savedBuddy);
+        setBuddy(result.buddy);
+        setReturnMessage(result.returnMessage);
       }
     });
 
@@ -38,6 +40,7 @@ export default function DearBuddyApp() {
     dominantColor,
     accentColor,
     avatarProfile,
+    generatedActionImages,
     generatedImageDataUrl,
   }: CreateBuddyPayload) => {
     const nextBuddy = createBuddy({
@@ -46,12 +49,14 @@ export default function DearBuddyApp() {
       dominantColor,
       accentColor,
       avatarProfile,
+      generatedActionImages,
       generatedImageDataUrl,
     });
     const result = await saveBuddy(nextBuddy);
 
     setBuddy(nextBuddy);
     setStorageWarning(result.ok ? "" : result.error);
+    setReturnMessage("");
   };
 
   const handleChange = async (nextBuddy: Buddy) => {
@@ -59,12 +64,14 @@ export default function DearBuddyApp() {
 
     setBuddy(nextBuddy);
     setStorageWarning(result.ok ? "" : result.error);
+    setReturnMessage("");
   };
 
   const handleReset = async () => {
     await clearSavedBuddy(undefined, buddy?.id);
     setBuddy(null);
     setStorageWarning("");
+    setReturnMessage("");
   };
 
   if (!buddy) {
@@ -76,6 +83,7 @@ export default function DearBuddyApp() {
       buddy={buddy}
       onChange={handleChange}
       onReset={handleReset}
+      returnMessage={returnMessage}
       storageWarning={storageWarning}
     />
   );

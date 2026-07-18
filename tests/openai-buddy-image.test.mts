@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  BUDDY_ACTION_IMAGE_KEYS,
   buildBuddyImagePrompt,
+  extractGeneratedActionImages,
   extractGeneratedImageDataUrl,
   getGenerateBuddyImageRequestPayload,
 } from "../lib/openai-buddy-image.ts";
@@ -37,6 +39,14 @@ test("buildBuddyImagePrompt asks for a cute pixel art buddy while preserving det
   assert.doesNotMatch(prompt, /svg/i);
 });
 
+test("buildBuddyImagePrompt adds action-specific pose direction", () => {
+  assert.match(buildBuddyImagePrompt(analysis, "idle"), /neutral idle pose/i);
+  assert.match(buildBuddyImagePrompt(analysis, "pet"), /being gently petted/i);
+  assert.match(buildBuddyImagePrompt(analysis, "feed"), /eating a tiny snack/i);
+  assert.match(buildBuddyImagePrompt(analysis, "play"), /playful jump/i);
+  assert.match(buildBuddyImagePrompt(analysis, "rest"), /sleepy resting pose/i);
+});
+
 test("getGenerateBuddyImageRequestPayload requests a PNG image model result", () => {
   const payload = getGenerateBuddyImageRequestPayload({
     analysis,
@@ -55,4 +65,27 @@ test("extractGeneratedImageDataUrl converts b64_json image output to a data URL"
   });
 
   assert.equal(dataUrl, "data:image/png;base64,abc123");
+});
+
+test("extractGeneratedActionImages converts multiple image outputs to an action image map", () => {
+  const actionImages = extractGeneratedActionImages(
+    {
+      data: [
+        { b64_json: "idle-image" },
+        { b64_json: "pet-image" },
+        { b64_json: "feed-image" },
+        { b64_json: "play-image" },
+        { b64_json: "rest-image" },
+      ],
+    },
+    BUDDY_ACTION_IMAGE_KEYS,
+  );
+
+  assert.deepEqual(actionImages, {
+    idle: "data:image/png;base64,idle-image",
+    pet: "data:image/png;base64,pet-image",
+    feed: "data:image/png;base64,feed-image",
+    play: "data:image/png;base64,play-image",
+    rest: "data:image/png;base64,rest-image",
+  });
 });

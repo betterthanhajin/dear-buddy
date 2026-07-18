@@ -9,7 +9,7 @@ import {
   getSpeciesLabel,
   normalizeBuddyAnalysis,
 } from "@/lib/buddy-analysis";
-import type { AvatarProfile } from "@/lib/buddy";
+import type { AvatarProfile, BuddyActionImages } from "@/lib/buddy";
 import { createAvatarProfile } from "@/lib/buddy";
 import type { BuddyCreationStage } from "@/lib/buddy-creation-status";
 import { getBuddyCreationStatus } from "@/lib/buddy-creation-status";
@@ -22,6 +22,7 @@ type BuddyCreatorProps = {
     dominantColor: string;
     accentColor: string;
     avatarProfile: AvatarProfile;
+    generatedActionImages?: BuddyActionImages;
     generatedImageDataUrl?: string;
   }) => void;
 };
@@ -31,6 +32,7 @@ type DraftBuddy = {
   dominantColor: string;
   accentColor: string;
   avatarProfile: AvatarProfile;
+  generatedActionImages?: BuddyActionImages;
   generatedImageDataUrl?: string;
   warning: string;
 };
@@ -95,6 +97,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       setDraftBuddy({
         ...palette,
         avatarProfile: analyzedProfile.avatarProfile,
+        generatedActionImages: generatedImage?.actionImages,
         generatedImageDataUrl: generatedImage?.imageDataUrl,
         warning: generatedImage?.warning || analyzedProfile.warning,
       });
@@ -119,6 +122,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       dominantColor: draftBuddy.dominantColor,
       accentColor: draftBuddy.accentColor,
       avatarProfile: draftBuddy.avatarProfile,
+      generatedActionImages: draftBuddy.generatedActionImages,
       generatedImageDataUrl: draftBuddy.generatedImageDataUrl,
     });
   };
@@ -146,6 +150,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
     setDraftBuddy({
       ...draftBuddy,
       avatarProfile: createAnalyzedAvatarProfile(analysis),
+      generatedActionImages: undefined,
       generatedImageDataUrl: undefined,
       warning: "",
     });
@@ -333,18 +338,22 @@ async function analyzeBuddyPhoto(palette: {
 
 async function generateBuddyImage(
   analysis: BuddyAnalysis,
-): Promise<{ imageDataUrl?: string; warning: string }> {
+): Promise<{ actionImages?: BuddyActionImages; imageDataUrl?: string; warning: string }> {
   try {
     const response = await fetch("/api/generate-buddy-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ analysis }),
+      body: JSON.stringify({ actions: true, analysis }),
     });
 
     const result: unknown = await response.json();
 
     if (isGenerateImageSuccess(result)) {
-      return { imageDataUrl: result.imageDataUrl, warning: "" };
+      return {
+        actionImages: result.actionImages,
+        imageDataUrl: result.imageDataUrl,
+        warning: "",
+      };
     }
 
     return { warning: getGenerateImageWarning(result) };
@@ -396,6 +405,7 @@ function getAnalyzeWarning(value: unknown) {
 }
 
 function isGenerateImageSuccess(value: unknown): value is {
+  actionImages?: BuddyActionImages;
   ok: true;
   imageDataUrl: string;
 } {
@@ -403,8 +413,17 @@ function isGenerateImageSuccess(value: unknown): value is {
     return false;
   }
 
-  const candidate = value as { ok?: unknown; imageDataUrl?: unknown };
-  return candidate.ok === true && typeof candidate.imageDataUrl === "string";
+  const candidate = value as {
+    actionImages?: unknown;
+    ok?: unknown;
+    imageDataUrl?: unknown;
+  };
+
+  return (
+    candidate.ok === true &&
+    typeof candidate.imageDataUrl === "string" &&
+    (typeof candidate.actionImages === "undefined" || isActionImageMap(candidate.actionImages))
+  );
 }
 
 function getGenerateImageWarning(value: unknown) {
@@ -425,4 +444,12 @@ function PreviewPanel({ children, title }: { children: React.ReactNode; title: s
       </div>
     </div>
   );
+}
+
+function isActionImageMap(value: unknown): value is BuddyActionImages {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.values(value).every((imageDataUrl) => typeof imageDataUrl === "string");
 }

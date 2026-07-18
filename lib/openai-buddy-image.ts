@@ -3,6 +3,7 @@ import type { BuddyAnalysis } from "./buddy-analysis";
 export const BUDDY_ACTION_IMAGE_KEYS = ["idle", "pet", "feed", "play", "rest"] as const;
 export type BuddyActionImageKey = (typeof BUDDY_ACTION_IMAGE_KEYS)[number];
 export type BuddyActionImages = Partial<Record<BuddyActionImageKey, string>>;
+export const BACKGROUND_BUDDY_ACTION_IMAGE_KEYS = ["pet", "feed", "play", "rest"] as const;
 
 export type GenerateBuddyImageRequestInput = {
   analysis: BuddyAnalysis;

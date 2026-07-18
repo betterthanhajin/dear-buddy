@@ -21,6 +21,7 @@ type BuddyCreatorProps = {
     photoDataUrl: string;
     dominantColor: string;
     accentColor: string;
+    actionImageAnalysis?: BuddyAnalysis;
     avatarProfile: AvatarProfile;
     generatedActionImages?: BuddyActionImages;
     generatedImageDataUrl?: string;
@@ -31,6 +32,7 @@ type DraftBuddy = {
   photoDataUrl: string;
   dominantColor: string;
   accentColor: string;
+  actionImageAnalysis?: BuddyAnalysis;
   avatarProfile: AvatarProfile;
   generatedActionImages?: BuddyActionImages;
   generatedImageDataUrl?: string;
@@ -96,6 +98,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
 
       setDraftBuddy({
         ...palette,
+        actionImageAnalysis: analyzedProfile.analysis,
         avatarProfile: analyzedProfile.avatarProfile,
         generatedActionImages: generatedImage?.actionImages,
         generatedImageDataUrl: generatedImage?.imageDataUrl,
@@ -121,6 +124,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
       photoDataUrl: draftBuddy.photoDataUrl,
       dominantColor: draftBuddy.dominantColor,
       accentColor: draftBuddy.accentColor,
+      actionImageAnalysis: draftBuddy.actionImageAnalysis,
       avatarProfile: draftBuddy.avatarProfile,
       generatedActionImages: draftBuddy.generatedActionImages,
       generatedImageDataUrl: draftBuddy.generatedImageDataUrl,
@@ -149,6 +153,7 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
 
     setDraftBuddy({
       ...draftBuddy,
+      actionImageAnalysis: analysis,
       avatarProfile: createAnalyzedAvatarProfile(analysis),
       generatedActionImages: undefined,
       generatedImageDataUrl: undefined,
@@ -157,136 +162,135 @@ export default function BuddyCreator({ onCreate }: BuddyCreatorProps) {
   };
 
   return (
-    <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-5 py-8">
-      <div className="grid gap-8 md:grid-cols-[1.05fr_0.95fr] md:items-center">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-rose-500">
-            Dear Buddy
-          </p>
-          <h1 className="mt-3 text-4xl font-bold leading-tight text-zinc-950 md:text-6xl">
-            아끼는 인형을 작은 버디로 키워요
-          </h1>
-          <p className="mt-5 max-w-xl text-base leading-7 text-zinc-600">
-            사진은 브라우저 안에서만 분석합니다. 대표 색을 뽑아 2D 버디를 만들고,
-            이름을 붙이면 바로 돌보기 화면으로 이어집니다.
+    <main className="retro-page">
+      <section className="retro-shell retro-shell-creator">
+        <div className="retro-copy">
+          <p className="retro-kicker">Dear Buddy</p>
+          <h1>사진 속 친구를 작은 도트 버디로 데려와요</h1>
+          <p>
+            먼저 기본 버디를 빠르게 만들고, 돌봄 표정은 뒤에서 천천히 준비합니다.
+            사진과 버디는 이 브라우저에 저장돼요.
           </p>
         </div>
 
-        <form
-          className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-xl shadow-zinc-200/70"
-          onSubmit={handleSubmit}
-        >
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-800">인형 사진</span>
-            <span className="mt-3 flex min-h-40 cursor-pointer items-center justify-center rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-center text-sm text-zinc-500 transition hover:border-rose-300 hover:bg-rose-50">
-              <input
-                accept="image/*"
-                className="sr-only"
-                onChange={handleFileChange}
-                type="file"
-              />
-              {draftBuddy ? "다른 사진으로 바꾸기" : "사진을 선택해 주세요"}
-            </span>
-          </label>
-
-          {errorMessage ? (
-            <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">
-              {errorMessage}
-            </p>
-          ) : null}
-
-          {draftBuddy?.warning ? (
-            <p className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              {draftBuddy.warning}
-            </p>
-          ) : null}
-
-          {creationStatus.message ? (
-            <div
-              aria-live="polite"
-              className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700"
-            >
-              {creationStatus.message}
-            </div>
-          ) : null}
-
-          <div className="mt-5 grid grid-cols-2 gap-4">
-            <PreviewPanel title="원본 사진">
-              {draftBuddy ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  alt="업로드한 인형"
-                  className="h-full w-full rounded-3xl object-cover"
-                  src={draftBuddy.photoDataUrl}
+        <form className="retro-device retro-device-form" onSubmit={handleSubmit}>
+          <div className="retro-device-top">
+            <span>NEW BUDDY</span>
+            <span>{creationStatus.isBusy ? "SYNC" : "READY"}</span>
+          </div>
+          <div className="retro-screen retro-screen-form">
+            <label className="block">
+              <span className="retro-label">인형 사진</span>
+              <span className="retro-upload">
+                <input
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                  type="file"
                 />
-              ) : (
-                <span className="text-sm text-zinc-400">아직 사진이 없어요</span>
-              )}
-            </PreviewPanel>
-            <PreviewPanel title="생성 버디">
-              {avatarProfile ? (
-                <div className="flex flex-col items-center gap-2">
-                  {generatedImageDataUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt="생성된 버디"
-                      className="h-24 w-24 rounded-3xl object-contain"
-                      src={generatedImageDataUrl}
-                    />
-                  ) : (
-                    <BuddyAvatar profile={avatarProfile} size="sm" />
-                  )}
-                  <span className="text-xs font-semibold text-zinc-500">
-                    {avatarProfile.displayLabel ?? "사진 속 버디"}
+                {draftBuddy ? "다른 사진으로 바꾸기" : "사진을 선택해 주세요"}
+              </span>
+            </label>
+
+            {errorMessage ? (
+              <p className="retro-alert retro-alert-error">
+                {errorMessage}
+              </p>
+            ) : null}
+
+            {draftBuddy?.warning ? (
+              <p className="retro-alert retro-alert-warn">
+                {draftBuddy.warning}
+              </p>
+            ) : null}
+
+            {creationStatus.message ? (
+              <div
+                aria-live="polite"
+                className="retro-alert retro-alert-live"
+              >
+                {creationStatus.message}
+              </div>
+            ) : null}
+
+            <div className="retro-preview-grid">
+              <PreviewPanel title="원본 사진">
+                {draftBuddy ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt="업로드한 인형"
+                    className="h-full w-full rounded-3xl object-cover"
+                    src={draftBuddy.photoDataUrl}
+                  />
+                ) : (
+                  <span className="text-sm text-zinc-400">아직 사진이 없어요</span>
+                )}
+              </PreviewPanel>
+              <PreviewPanel title="생성 버디">
+                {avatarProfile ? (
+                  <div className="flex flex-col items-center gap-2">
+                    {generatedImageDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt="생성된 버디"
+                        className="h-24 w-24 rounded-3xl object-contain"
+                        src={generatedImageDataUrl}
+                      />
+                    ) : (
+                      <BuddyAvatar profile={avatarProfile} size="sm" />
+                    )}
+                    <span className="text-xs font-semibold text-zinc-500">
+                      {avatarProfile.displayLabel ?? "사진 속 버디"}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-zinc-400">
+                    {creationStatus.message || "사진을 고르면 나타나요"}
                   </span>
-                </div>
-              ) : (
-                <span className="text-sm text-zinc-400">
-                  {creationStatus.message || "사진을 고르면 나타나요"}
-                </span>
-              )}
-            </PreviewPanel>
+                )}
+              </PreviewPanel>
+            </div>
+
+            {draftBuddy ? (
+              <label className="retro-field">
+                <span className="retro-label">감지된 종류</span>
+                <select
+                  className="retro-input"
+                  onChange={handleSpeciesChange}
+                  value={draftBuddy.avatarProfile.species ?? "custom"}
+                >
+                  {SPECIES_OPTIONS.map((species) => (
+                    <option key={species} value={species}>
+                      {getSpeciesLabel(species)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            <label className="retro-field">
+              <span className="retro-label">버디 이름</span>
+              <input
+                className="retro-input"
+                maxLength={16}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="예: 몽실이"
+                type="text"
+                value={name}
+              />
+            </label>
           </div>
 
-          {draftBuddy ? (
-            <label className="mt-5 block">
-              <span className="text-sm font-semibold text-zinc-800">감지된 종류</span>
-              <select
-                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-                onChange={handleSpeciesChange}
-                value={draftBuddy.avatarProfile.species ?? "custom"}
-              >
-                {SPECIES_OPTIONS.map((species) => (
-                  <option key={species} value={species}>
-                    {getSpeciesLabel(species)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          <label className="mt-5 block">
-            <span className="text-sm font-semibold text-zinc-800">버디 이름</span>
-            <input
-              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-              maxLength={16}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="예: 몽실이"
-              type="text"
-              value={name}
-            />
-          </label>
-
           <button
-            className="mt-5 w-full rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition enabled:hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-zinc-300"
+            className="retro-primary-button"
             disabled={!canCreate}
             type="submit"
           >
             {creationStatus.isBusy ? "잠시만 기다려 주세요" : "버디 만들기"}
           </button>
         </form>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
 
@@ -343,7 +347,7 @@ async function generateBuddyImage(
     const response = await fetch("/api/generate-buddy-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ actions: true, analysis }),
+      body: JSON.stringify({ actionKeys: ["idle"], actions: true, analysis }),
     });
 
     const result: unknown = await response.json();
@@ -438,8 +442,8 @@ function getGenerateImageWarning(value: unknown) {
 function PreviewPanel({ children, title }: { children: React.ReactNode; title: string }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold text-zinc-500">{title}</p>
-      <div className="flex aspect-square items-center justify-center rounded-3xl bg-zinc-50 p-3">
+      <p className="retro-preview-title">{title}</p>
+      <div className="retro-preview-panel">
         {children}
       </div>
     </div>

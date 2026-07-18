@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  BACKGROUND_BUDDY_ACTION_IMAGE_KEYS,
   BUDDY_ACTION_IMAGE_KEYS,
   buildBuddyImagePrompt,
   extractGeneratedActionImages,
@@ -88,4 +89,8 @@ test("extractGeneratedActionImages converts multiple image outputs to an action 
     play: "data:image/png;base64,play-image",
     rest: "data:image/png;base64,rest-image",
   });
+});
+
+test("BACKGROUND_BUDDY_ACTION_IMAGE_KEYS excludes the idle image for deferred generation", () => {
+  assert.deepEqual(BACKGROUND_BUDDY_ACTION_IMAGE_KEYS, ["pet", "feed", "play", "rest"]);
 });

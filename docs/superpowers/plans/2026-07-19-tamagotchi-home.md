@@ -95,16 +95,15 @@ git add lib/tamagotchi.ts tests/tamagotchi.test.mts
 git commit -m "feat: add tamagotchi affection state"
 ```
 
-### Task 2: 라우트 격리
+### Task 2: 백업 라우트 준비
 
 **Files:**
 - Create: `app/backup/page.tsx`
-- Modify: `app/page.tsx`
 - Test: `tests/tamagotchi-routes.test.mts`
 
 **Interfaces:**
-- Consumes: `DearBuddyApp`, 이후 Task 3에서 생성할 `TamagotchiDevice`
-- Produces: `/backup` 기존 앱 라우트, `/` 신규 다마고치 라우트
+- Consumes: `DearBuddyApp`
+- Produces: `/backup` 기존 앱 라우트
 
 - [ ] **Step 1: 실패 테스트 작성**
 
@@ -117,13 +116,6 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-test("the home route renders only the new tamagotchi device", () => {
-  const source = readFileSync(resolve(repoRoot, "app/page.tsx"), "utf8");
-
-  assert.match(source, /TamagotchiDevice/);
-  assert.doesNotMatch(source, /DearBuddyApp/);
-});
-
 test("the backup route preserves the previous Dear Buddy app", () => {
   const source = readFileSync(resolve(repoRoot, "app/backup/page.tsx"), "utf8");
 
@@ -135,21 +127,9 @@ test("the backup route preserves the previous Dear Buddy app", () => {
 
 Run: `node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/tamagotchi-routes.test.mts`
 
-Expected: FAIL because `app/page.tsx` still imports `DearBuddyApp` and `app/backup/page.tsx` does not exist.
+Expected: FAIL because `app/backup/page.tsx` does not exist.
 
-- [ ] **Step 3: 라우트 파일 작성**
-
-`app/page.tsx`:
-
-```tsx
-import TamagotchiDevice from "@/components/TamagotchiDevice";
-
-export default function Home() {
-  return <TamagotchiDevice />;
-}
-```
-
-`app/backup/page.tsx`:
+- [ ] **Step 3: 백업 라우트 파일 작성**
 
 ```tsx
 import DearBuddyApp from "@/components/DearBuddyApp";
@@ -163,7 +143,14 @@ export default function BackupPage() {
 
 Run: `node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/tamagotchi-routes.test.mts`
 
-Expected: 2 tests pass, 0 fail.
+Expected: 1 test passes, 0 fail.
+
+- [ ] **Step 5: 백업 라우트 커밋**
+
+```bash
+git add app/backup/page.tsx tests/tamagotchi-routes.test.mts
+git commit -m "feat: preserve previous app at backup route"
+```
 
 ### Task 3: 픽셀 펫 자산과 다마고치 컴포넌트
 
@@ -172,11 +159,13 @@ Expected: 2 tests pass, 0 fail.
 - Create: `public/tamagotchi/idle-pet.png`
 - Create: `components/TamagotchiDevice.tsx`
 - Create: `components/TamagotchiDevice.module.css`
+- Modify: `app/page.tsx`
+- Modify: `tests/tamagotchi-routes.test.mts`
 - Test: `tests/tamagotchi-view.test.mts`
 
 **Interfaces:**
 - Consumes: `INITIAL_TAMAGOTCHI_STATE`, `petBuddy(state)`, `/tamagotchi/tv-frame.png`, `/tamagotchi/idle-pet.png`
-- Produces: 기본 상태와 중앙 버튼 반응을 포함한 `TamagotchiDevice`
+- Produces: 기본 상태와 중앙 버튼 반응을 포함한 `TamagotchiDevice`, 신규 `/` 라우트
 
 - [ ] **Step 1: 제공된 프레임 자산 복사**
 
@@ -227,13 +216,38 @@ test("the tamagotchi device uses the supplied frame and generated pet assets", (
 });
 ```
 
-- [ ] **Step 4: 테스트가 올바르게 실패하는지 확인**
+- [ ] **Step 4: 홈 라우트 실패 테스트 추가**
 
-Run: `node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/tamagotchi-view.test.mts`
+Append to `tests/tamagotchi-routes.test.mts`:
 
-Expected: FAIL because `components/TamagotchiDevice.tsx` does not exist.
+```ts
+test("the home route renders only the new tamagotchi device", () => {
+  const source = readFileSync(resolve(repoRoot, "app/page.tsx"), "utf8");
 
-- [ ] **Step 5: 컴포넌트 구현**
+  assert.match(source, /TamagotchiDevice/);
+  assert.doesNotMatch(source, /DearBuddyApp/);
+});
+```
+
+- [ ] **Step 5: 테스트가 올바르게 실패하는지 확인**
+
+Run: `node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/tamagotchi-view.test.mts tests/tamagotchi-routes.test.mts`
+
+Expected: FAIL because `components/TamagotchiDevice.tsx` does not exist and `app/page.tsx` still renders `DearBuddyApp`.
+
+- [ ] **Step 6: 컴포넌트와 홈 라우트 구현**
+
+`app/page.tsx`:
+
+```tsx
+import TamagotchiDevice from "@/components/TamagotchiDevice";
+
+export default function Home() {
+  return <TamagotchiDevice />;
+}
+```
+
+`components/TamagotchiDevice.tsx`:
 
 ```tsx
 "use client";
@@ -331,7 +345,7 @@ export default function TamagotchiDevice() {
 }
 ```
 
-- [ ] **Step 6: 컴포넌트 스타일 작성**
+- [ ] **Step 7: 컴포넌트 스타일 작성**
 
 ```css
 .page {
@@ -536,16 +550,16 @@ export default function TamagotchiDevice() {
 }
 ```
 
-- [ ] **Step 7: 컴포넌트 구조 테스트 통과 확인**
+- [ ] **Step 8: 라우트와 컴포넌트 구조 테스트 통과 확인**
 
-Run: `node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/tamagotchi-view.test.mts`
+Run: `node --test --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/tamagotchi-view.test.mts tests/tamagotchi-routes.test.mts`
 
-Expected: 2 tests pass, 0 fail.
+Expected: 4 tests pass, 0 fail.
 
-- [ ] **Step 8: 라우트와 컴포넌트 커밋**
+- [ ] **Step 9: 홈 라우트와 컴포넌트 커밋**
 
 ```bash
-git add app/page.tsx app/backup/page.tsx components/TamagotchiDevice.tsx components/TamagotchiDevice.module.css public/tamagotchi tests/tamagotchi-routes.test.mts tests/tamagotchi-view.test.mts
+git add app/page.tsx components/TamagotchiDevice.tsx components/TamagotchiDevice.module.css public/tamagotchi tests/tamagotchi-routes.test.mts tests/tamagotchi-view.test.mts
 git commit -m "feat: add tamagotchi home screen"
 ```
 
@@ -563,7 +577,7 @@ git commit -m "feat: add tamagotchi home screen"
 
 Run: `npm test`
 
-Expected: 기존 48개와 신규 6개 테스트가 모두 통과합니다.
+Expected: 기존 47개와 신규 6개 테스트가 모두 통과합니다.
 
 - [ ] **Step 2: 린트 실행**
 

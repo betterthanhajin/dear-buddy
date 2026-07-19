@@ -13,6 +13,11 @@ export type BuddyShopItemId =
   | "round-window"
   | "soft-cushion";
 export type BuddyInventory = Partial<Record<BuddyShopItemId, number>>;
+export type BuddyRoomItemPlacement = {
+  x: number;
+  y: number;
+};
+export type BuddyRoomItemPlacements = Partial<Record<BuddyShopItemId, BuddyRoomItemPlacement>>;
 
 export type BuddyStats = {
   affection: number;
@@ -45,6 +50,7 @@ export type Buddy = {
   inventory: BuddyInventory;
   equippedRoomItemId?: BuddyShopItemId;
   equippedRoomItemIds: BuddyShopItemId[];
+  roomItemPlacements: BuddyRoomItemPlacements;
   createdAt: string;
   updatedAt: string;
   lastCareAt: string;
@@ -236,6 +242,7 @@ export function createBuddy({
     coins: DEFAULT_COINS,
     inventory: {},
     equippedRoomItemIds: [],
+    roomItemPlacements: {},
     avatarProfile:
       avatarProfile ??
       createAvatarProfile({
@@ -304,6 +311,9 @@ export function equipBuddyRoomItem(buddy: Buddy, itemId: BuddyShopItemId) {
   const nextEquippedRoomItemIds = isEquipped
     ? equippedRoomItemIds.filter((equippedItemId) => equippedItemId !== itemId)
     : [...equippedRoomItemIds, itemId];
+  const roomItemPlacements = isEquipped
+    ? removeRoomItemPlacement(buddy.roomItemPlacements, itemId)
+    : buddy.roomItemPlacements;
 
   return {
     ok: true as const,
@@ -311,11 +321,84 @@ export function equipBuddyRoomItem(buddy: Buddy, itemId: BuddyShopItemId) {
       ...buddy,
       equippedRoomItemId: nextEquippedRoomItemIds[0],
       equippedRoomItemIds: nextEquippedRoomItemIds,
+      roomItemPlacements,
       updatedAt: new Date().toISOString(),
     },
     message: isEquipped
       ? `${item.label}를 방에서 치웠어요.`
       : `${item.label}를 방에 배치했어요.`,
+  };
+}
+
+export function placeBuddyRoomItem(
+  buddy: Buddy,
+  itemId: BuddyShopItemId,
+  placement: BuddyRoomItemPlacement,
+) {
+  const item = SHOP_ITEMS[itemId];
+
+  if (!ROOM_ITEMS.includes(itemId)) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "방에 배치할 수 없는 아이템이에요.",
+    };
+  }
+
+  if (!buddy.inventory[itemId]) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "아직 가지고 있지 않은 아이템이에요.",
+    };
+  }
+
+  const equippedRoomItemIds = getEquippedRoomItemIds(buddy);
+  const nextEquippedRoomItemIds = equippedRoomItemIds.includes(itemId)
+    ? equippedRoomItemIds
+    : [...equippedRoomItemIds, itemId];
+
+  return {
+    ok: true as const,
+    buddy: {
+      ...buddy,
+      equippedRoomItemId: nextEquippedRoomItemIds[0],
+      equippedRoomItemIds: nextEquippedRoomItemIds,
+      roomItemPlacements: {
+        ...buddy.roomItemPlacements,
+        [itemId]: normalizeRoomItemPlacement(placement),
+      },
+      updatedAt: new Date().toISOString(),
+    },
+    message: `${item.label}를 방에 놓았어요.`,
+  };
+}
+
+export function removeBuddyRoomItem(buddy: Buddy, itemId: BuddyShopItemId) {
+  const item = SHOP_ITEMS[itemId];
+
+  if (!ROOM_ITEMS.includes(itemId)) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "방에서 치울 수 없는 아이템이에요.",
+    };
+  }
+
+  const nextEquippedRoomItemIds = getEquippedRoomItemIds(buddy).filter(
+    (equippedItemId) => equippedItemId !== itemId,
+  );
+
+  return {
+    ok: true as const,
+    buddy: {
+      ...buddy,
+      equippedRoomItemId: nextEquippedRoomItemIds[0],
+      equippedRoomItemIds: nextEquippedRoomItemIds,
+      roomItemPlacements: removeRoomItemPlacement(buddy.roomItemPlacements, itemId),
+      updatedAt: new Date().toISOString(),
+    },
+    message: `${item.label}를 방에서 치웠어요.`,
   };
 }
 
@@ -484,6 +567,33 @@ function removeInventoryItem(inventory: BuddyInventory, itemId: BuddyShopItemId)
   }
 
   return nextInventory;
+}
+
+export function normalizeRoomItemPlacement({
+  x,
+  y,
+}: BuddyRoomItemPlacement): BuddyRoomItemPlacement {
+  return {
+    x: clampPercent(x),
+    y: clampPercent(y),
+  };
+}
+
+function removeRoomItemPlacement(
+  placements: BuddyRoomItemPlacements,
+  itemId: BuddyShopItemId,
+): BuddyRoomItemPlacements {
+  const nextPlacements = { ...placements };
+  delete nextPlacements[itemId];
+  return nextPlacements;
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) {
+    return 50;
+  }
+
+  return Math.min(Math.max(Math.round(value), 0), 100);
 }
 
 function getEquippedRoomItemIds(buddy: Buddy): BuddyShopItemId[] {

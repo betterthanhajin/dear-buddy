@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import BuddyAvatar from "@/components/BuddyAvatar";
 import { getBuddyActionReaction } from "@/lib/buddy-action-reaction";
-import type { Buddy, BuddyAction, BuddyShopItemId } from "@/lib/buddy";
+import type { Buddy, BuddyAction, BuddyRoomItemPlacement, BuddyShopItemId } from "@/lib/buddy";
 import {
   applyBuddyAction,
   applyBuddyItemEffect,
@@ -15,6 +15,8 @@ import {
   getBuddyLevel,
   getBuddyMood,
   MINI_GAME_REWARD,
+  placeBuddyRoomItem,
+  removeBuddyRoomItem,
   ROOM_ITEMS,
   SHOP_ITEMS,
 } from "@/lib/buddy";
@@ -36,6 +38,16 @@ const actionLabels: Record<BuddyAction, { label: string; description: string }> 
 };
 type BuddyView = "home" | "shop" | "decor" | "play" | "dex" | "collection" | "growth" | "settings";
 const shopItemIds = Object.keys(SHOP_ITEMS) as BuddyShopItemId[];
+const defaultRoomItemPlacements: Record<BuddyShopItemId, BuddyRoomItemPlacement> = {
+  "fish-snack": { x: 50, y: 50 },
+  "pink-rug": { x: 50, y: 74 },
+  "beach-ball": { x: 74, y: 70 },
+  "cozy-bed": { x: 28, y: 76 },
+  "wooden-shelf": { x: 28, y: 27 },
+  "stand-lamp": { x: 78, y: 59 },
+  "round-window": { x: 76, y: 25 },
+  "soft-cushion": { x: 62, y: 76 },
+};
 
 export default function BuddyCarePanel({
   actionImagesMessage,
@@ -109,6 +121,24 @@ export default function BuddyCarePanel({
 
   const handleUseItem = (itemId: BuddyShopItemId) => {
     const result = applyBuddyItemEffect(buddy, itemId);
+    setFeatureMessage(result.message);
+
+    if (result.ok) {
+      onChange(result.buddy);
+    }
+  };
+
+  const handlePlaceRoomItem = (itemId: BuddyShopItemId, placement: BuddyRoomItemPlacement) => {
+    const result = placeBuddyRoomItem(buddy, itemId, placement);
+    setFeatureMessage(result.message);
+
+    if (result.ok) {
+      onChange(result.buddy);
+    }
+  };
+
+  const handleRemoveRoomItem = (itemId: BuddyShopItemId) => {
+    const result = removeBuddyRoomItem(buddy, itemId);
     setFeatureMessage(result.message);
 
     if (result.ok) {
@@ -247,7 +277,13 @@ export default function BuddyCarePanel({
         ) : null}
 
         {activeView === "decor" ? (
-          <DecorPanel buddy={buddy} idleImageDataUrl={idleImageDataUrl} onEquip={handleEquipRoomItem} />
+          <DecorPanel
+            buddy={buddy}
+            idleImageDataUrl={idleImageDataUrl}
+            onEquip={handleEquipRoomItem}
+            onPlace={handlePlaceRoomItem}
+            onRemove={handleRemoveRoomItem}
+          />
         ) : null}
 
         {activeView === "play" ? (
@@ -470,12 +506,50 @@ function DecorPanel({
   buddy,
   idleImageDataUrl,
   onEquip,
+  onPlace,
+  onRemove,
 }: {
   buddy: Buddy;
   idleImageDataUrl?: string;
   onEquip: (itemId: BuddyShopItemId) => void;
+  onPlace: (itemId: BuddyShopItemId, placement: BuddyRoomItemPlacement) => void;
+  onRemove: (itemId: BuddyShopItemId) => void;
 }) {
   const equippedRoomItemIds = buddy.equippedRoomItemIds ?? [];
+  const roomPreviewRef = useRef<HTMLDivElement | null>(null);
+  const [draggingItem, setDraggingItem] = useState<{
+    itemId: BuddyShopItemId;
+    pointerId: number;
+  } | null>(null);
+
+  const startDragging = (event: React.PointerEvent, itemId: BuddyShopItemId) => {
+    event.preventDefault();
+    setDraggingItem({ itemId, pointerId: event.pointerId });
+
+    const handlePointerUp = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const placement = getRoomPlacementFromPointer(pointerEvent, roomPreviewRef.current);
+      setDraggingItem(null);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+
+      if (placement) {
+        onPlace(itemId, placement);
+      }
+    };
+
+    const handlePointerCancel = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId === event.pointerId) {
+        setDraggingItem(null);
+        window.removeEventListener("pointerup", handlePointerUp);
+      }
+    };
+
+    window.addEventListener("pointerup", handlePointerUp, { once: true });
+    window.addEventListener("pointercancel", handlePointerCancel, { once: true });
+  };
 
   return (
     <section className="retro-card retro-collection-card">
@@ -483,15 +557,17 @@ function DecorPanel({
         <h2>꾸미기</h2>
         <span>{equippedRoomItemIds.length > 0 ? `배치 ${equippedRoomItemIds.length}` : "기본 방"}</span>
       </div>
-      <div className={getRoomPreviewClassName(equippedRoomItemIds)}>
+      <div className={getRoomPreviewClassName(equippedRoomItemIds, draggingItem?.itemId)} ref={roomPreviewRef}>
         <div className="retro-room-window" />
-        <div className="retro-room-round-window" />
         <div className="retro-room-shelf" />
-        <div className="retro-room-wooden-shelf" />
-        <div className="retro-room-lamp" />
-        <div className="retro-room-bed" />
-        <div className="retro-room-rug" />
-        <div className="retro-room-cushion" />
+        {equippedRoomItemIds.map((itemId) => (
+          <RoomFurniture
+            itemId={itemId}
+            key={itemId}
+            onPointerDown={startDragging}
+            placement={getRoomItemPlacement(buddy, itemId)}
+          />
+        ))}
         <div className="retro-room-buddy">
           {idleImageDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -501,7 +577,7 @@ function DecorPanel({
           )}
         </div>
       </div>
-      <div className="retro-action-grid">
+      <div className="retro-furniture-tray" aria-label="보유 가구 목록">
         {ROOM_ITEMS.map((itemId) => {
           const item = SHOP_ITEMS[itemId];
           const isOwned = !!buddy.inventory[itemId];
@@ -509,18 +585,35 @@ function DecorPanel({
 
           return (
             <button
-              className={`retro-action-card ${isEquipped ? "is-equipped" : ""}`}
+              className={`retro-furniture-card ${isEquipped ? "is-equipped" : ""}`}
               disabled={!isOwned}
               key={itemId}
               onClick={() => onEquip(itemId)}
+              onPointerDown={(event) => {
+                if (isOwned) {
+                  startDragging(event, itemId);
+                }
+              }}
               type="button"
             >
+              <span className={`retro-furniture-mini is-${itemId}`} aria-hidden="true" />
               <span>{item.label}</span>
               <small>
                 {isOwned
-                  ? (isEquipped ? "배치 중이에요. 누르면 치워요." : "방에 배치하기")
+                  ? (isEquipped ? "드래그로 옮기거나 치우기" : "방으로 끌어다 놓기")
                   : "상점에서 먼저 구매해 주세요."}
               </small>
+              {isEquipped ? (
+                <span
+                  className="retro-furniture-remove"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove(itemId);
+                  }}
+                >
+                  치우기
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -533,9 +626,62 @@ function isRoomItemEquipped(buddy: Buddy, itemId: BuddyShopItemId) {
   return (buddy.equippedRoomItemIds ?? []).includes(itemId);
 }
 
-function getRoomPreviewClassName(equippedRoomItemIds: BuddyShopItemId[]) {
+function getRoomPreviewClassName(equippedRoomItemIds: BuddyShopItemId[], draggingItemId?: BuddyShopItemId) {
   const itemClassNames = equippedRoomItemIds.map((itemId) => `has-${itemId}`);
-  return ["retro-room-preview", ...itemClassNames].join(" ");
+  const draggingClassName = draggingItemId ? "is-dragging-furniture" : "";
+  const dropClassName = draggingItemId && ROOM_ITEMS.includes(draggingItemId) ? "is-drop-ready" : "";
+  return ["retro-room-preview", ...itemClassNames, draggingClassName, dropClassName]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function RoomFurniture({
+  itemId,
+  onPointerDown,
+  placement,
+}: {
+  itemId: BuddyShopItemId;
+  onPointerDown: (event: React.PointerEvent, itemId: BuddyShopItemId) => void;
+  placement: BuddyRoomItemPlacement;
+}) {
+  return (
+    <button
+      aria-label={`${SHOP_ITEMS[itemId].label} 옮기기`}
+      className={`retro-room-furniture is-${itemId}`}
+      onPointerDown={(event) => onPointerDown(event, itemId)}
+      style={{ left: `${placement.x}%`, top: `${placement.y}%` }}
+      type="button"
+    />
+  );
+}
+
+function getRoomItemPlacement(buddy: Buddy, itemId: BuddyShopItemId) {
+  return buddy.roomItemPlacements[itemId] ?? defaultRoomItemPlacements[itemId];
+}
+
+function getRoomPlacementFromPointer(
+  event: PointerEvent,
+  roomElement: HTMLDivElement | null,
+): BuddyRoomItemPlacement | null {
+  if (!roomElement) {
+    return null;
+  }
+
+  const rect = roomElement.getBoundingClientRect();
+  const isInsideRoom =
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom;
+
+  if (!isInsideRoom) {
+    return null;
+  }
+
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * 100,
+    y: ((event.clientY - rect.top) / rect.height) * 100,
+  };
 }
 
 function PlayPanel({ onReward }: { onReward: () => void }) {

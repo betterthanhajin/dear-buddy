@@ -13,6 +13,8 @@ import {
   equipBuddyRoomItem,
   getBuddyLevel,
   getBuddyMood,
+  placeBuddyRoomItem,
+  removeBuddyRoomItem,
 } from "../lib/buddy.ts";
 
 test("createBuddy stores a named buddy with generated avatar profile and initial stats", () => {
@@ -113,6 +115,47 @@ test("equipBuddyRoomItem toggles multiple owned room items", () => {
   assert.equal(bed.message, "작은 침대를 방에 배치했어요.");
   assert.deepEqual(removedRug.buddy.equippedRoomItemIds, ["cozy-bed"]);
   assert.equal(removedRug.message, "핑크 러그를 방에서 치웠어요.");
+});
+
+test("placeBuddyRoomItem equips a room item and stores a bounded room placement", () => {
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    }),
+    inventory: { "cozy-bed": 1 },
+  };
+
+  const result = placeBuddyRoomItem(buddy, "cozy-bed", { x: 128, y: -12 });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.buddy.equippedRoomItemIds, ["cozy-bed"]);
+  assert.deepEqual(result.buddy.roomItemPlacements["cozy-bed"], { x: 100, y: 0 });
+  assert.equal(result.message, "작은 침대를 방에 놓았어요.");
+});
+
+test("removeBuddyRoomItem removes placement while keeping the owned item", () => {
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    }),
+    inventory: { "cozy-bed": 1 },
+    equippedRoomItemIds: ["cozy-bed"],
+    roomItemPlacements: { "cozy-bed": { x: 40, y: 70 } },
+  };
+
+  const result = removeBuddyRoomItem(buddy, "cozy-bed");
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.buddy.equippedRoomItemIds, []);
+  assert.equal(result.buddy.roomItemPlacements["cozy-bed"], undefined);
+  assert.equal(result.buddy.inventory["cozy-bed"], 1);
+  assert.equal(result.message, "작은 침대를 방에서 치웠어요.");
 });
 
 test("claimMiniGameReward grants coins, experience, and a beach ball", () => {

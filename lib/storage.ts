@@ -4,7 +4,10 @@ import {
   type BuddyActionImageKey,
   type BuddyActionImages,
   type BuddyInventory,
+  type BuddyRoomItemPlacement,
+  type BuddyRoomItemPlacements,
   type BuddyShopItemId,
+  normalizeRoomItemPlacement,
   SHOP_ITEMS,
 } from "./buddy.ts";
 
@@ -348,6 +351,8 @@ function normalizeSavedBuddy(value: unknown): Buddy | null {
     dailyCareStreak: candidate.dailyCareStreak ?? 0,
     coins: typeof candidate.coins === "number" ? candidate.coins : 2530,
     inventory: normalizeInventory(candidate.inventory),
+    equippedRoomItemIds: normalizeEquippedRoomItemIds(candidate),
+    roomItemPlacements: normalizeRoomItemPlacements(candidate),
     avatarProfile: candidate.avatarProfile as Buddy["avatarProfile"],
     stats: {
       affection: candidate.stats.affection,
@@ -391,6 +396,62 @@ function normalizeInventory(value: unknown): BuddyInventory {
 
     return inventory;
   }, {});
+}
+
+function normalizeEquippedRoomItemIds(candidate: Partial<Buddy>): BuddyShopItemId[] {
+  const inventory = normalizeInventory(candidate.inventory);
+  const roomItemIds = [
+    ...(Array.isArray(candidate.equippedRoomItemIds) ? candidate.equippedRoomItemIds : []),
+    ...(typeof candidate.equippedRoomItemId === "string" ? [candidate.equippedRoomItemId] : []),
+  ];
+
+  return Array.from(
+    new Set(
+      roomItemIds.filter(
+        (itemId): itemId is BuddyShopItemId =>
+          itemId in SHOP_ITEMS &&
+          SHOP_ITEMS[itemId as BuddyShopItemId].type === "room" &&
+          !!inventory[itemId as BuddyShopItemId],
+      ),
+    ),
+  );
+}
+
+function normalizeRoomItemPlacements(candidate: Partial<Buddy>): BuddyRoomItemPlacements {
+  const inventory = normalizeInventory(candidate.inventory);
+  const equippedRoomItemIds = normalizeEquippedRoomItemIds(candidate);
+  const placements = candidate.roomItemPlacements;
+
+  if (!placements || typeof placements !== "object" || Array.isArray(placements)) {
+    return {};
+  }
+
+  return Object.entries(placements).reduce<BuddyRoomItemPlacements>(
+    (normalizedPlacements, [itemId, placement]) => {
+      if (
+        !(itemId in SHOP_ITEMS) ||
+        SHOP_ITEMS[itemId as BuddyShopItemId].type !== "room" ||
+        !inventory[itemId as BuddyShopItemId] ||
+        !equippedRoomItemIds.includes(itemId as BuddyShopItemId) ||
+        !isRoomItemPlacement(placement)
+      ) {
+        return normalizedPlacements;
+      }
+
+      normalizedPlacements[itemId as BuddyShopItemId] = normalizeRoomItemPlacement(placement);
+      return normalizedPlacements;
+    },
+    {},
+  );
+}
+
+function isRoomItemPlacement(value: unknown): value is BuddyRoomItemPlacement {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const candidate = value as { x?: unknown; y?: unknown };
+  return typeof candidate.x === "number" && typeof candidate.y === "number";
 }
 
 function isActionImageMap(value: unknown): value is BuddyActionImages {

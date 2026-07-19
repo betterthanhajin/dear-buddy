@@ -3,8 +3,21 @@ export type BuddyMood = "happy" | "sad" | "sleep" | "hungry";
 export type BuddyAction = "pet" | "feed" | "play" | "rest";
 export type BuddyActionImageKey = "idle" | BuddyAction;
 export type BuddyActionImages = Partial<Record<BuddyActionImageKey, string>>;
-export type BuddyShopItemId = "fish-snack" | "pink-rug" | "beach-ball";
+export type BuddyShopItemId =
+  | "fish-snack"
+  | "pink-rug"
+  | "beach-ball"
+  | "cozy-bed"
+  | "wooden-shelf"
+  | "stand-lamp"
+  | "round-window"
+  | "soft-cushion";
 export type BuddyInventory = Partial<Record<BuddyShopItemId, number>>;
+export type BuddyRoomItemPlacement = {
+  x: number;
+  y: number;
+};
+export type BuddyRoomItemPlacements = Partial<Record<BuddyShopItemId, BuddyRoomItemPlacement>>;
 
 export type BuddyStats = {
   affection: number;
@@ -36,6 +49,8 @@ export type Buddy = {
   coins: number;
   inventory: BuddyInventory;
   equippedRoomItemId?: BuddyShopItemId;
+  equippedRoomItemIds: BuddyShopItemId[];
+  roomItemPlacements: BuddyRoomItemPlacements;
   createdAt: string;
   updatedAt: string;
   lastCareAt: string;
@@ -107,6 +122,41 @@ export const SHOP_ITEMS: Record<
     price: 180,
     type: "room",
   },
+  "cozy-bed": {
+    description: "버디가 편하게 쉬는 작은 침대예요.",
+    effectLabel: "방 꾸미기",
+    label: "작은 침대",
+    price: 260,
+    type: "room",
+  },
+  "wooden-shelf": {
+    description: "소중한 물건을 올려두는 나무 선반이에요.",
+    effectLabel: "방 꾸미기",
+    label: "나무 선반",
+    price: 220,
+    type: "room",
+  },
+  "stand-lamp": {
+    description: "방을 따뜻하게 밝혀주는 스탠드 조명이에요.",
+    effectLabel: "방 꾸미기",
+    label: "스탠드 조명",
+    price: 240,
+    type: "room",
+  },
+  "round-window": {
+    description: "햇살이 들어오는 둥근 창문이에요.",
+    effectLabel: "방 꾸미기",
+    label: "둥근 창문",
+    price: 280,
+    type: "room",
+  },
+  "soft-cushion": {
+    description: "버디 옆에 놓기 좋은 폭신 쿠션이에요.",
+    effectLabel: "방 꾸미기",
+    label: "폭신 쿠션",
+    price: 150,
+    type: "room",
+  },
   "beach-ball": {
     description: "놀이 보상으로도 얻을 수 있는 공이에요.",
     effectLabel: "행복도 +8, 경험치 +10",
@@ -115,7 +165,14 @@ export const SHOP_ITEMS: Record<
     type: "toy",
   },
 };
-export const ROOM_ITEMS: BuddyShopItemId[] = ["pink-rug"];
+export const ROOM_ITEMS: BuddyShopItemId[] = [
+  "pink-rug",
+  "cozy-bed",
+  "wooden-shelf",
+  "stand-lamp",
+  "round-window",
+  "soft-cushion",
+];
 
 export function clampStat(value: number) {
   return Math.min(Math.max(value, 0), 100);
@@ -184,6 +241,8 @@ export function createBuddy({
     dailyCareStreak: 0,
     coins: DEFAULT_COINS,
     inventory: {},
+    equippedRoomItemIds: [],
+    roomItemPlacements: {},
     avatarProfile:
       avatarProfile ??
       createAvatarProfile({
@@ -247,14 +306,99 @@ export function equipBuddyRoomItem(buddy: Buddy, itemId: BuddyShopItemId) {
     };
   }
 
+  const equippedRoomItemIds = getEquippedRoomItemIds(buddy);
+  const isEquipped = equippedRoomItemIds.includes(itemId);
+  const nextEquippedRoomItemIds = isEquipped
+    ? equippedRoomItemIds.filter((equippedItemId) => equippedItemId !== itemId)
+    : [...equippedRoomItemIds, itemId];
+  const roomItemPlacements = isEquipped
+    ? removeRoomItemPlacement(buddy.roomItemPlacements, itemId)
+    : buddy.roomItemPlacements;
+
   return {
     ok: true as const,
     buddy: {
       ...buddy,
-      equippedRoomItemId: itemId,
+      equippedRoomItemId: nextEquippedRoomItemIds[0],
+      equippedRoomItemIds: nextEquippedRoomItemIds,
+      roomItemPlacements,
       updatedAt: new Date().toISOString(),
     },
-    message: `${item.label}를 방에 배치했어요.`,
+    message: isEquipped
+      ? `${item.label}를 방에서 치웠어요.`
+      : `${item.label}를 방에 배치했어요.`,
+  };
+}
+
+export function placeBuddyRoomItem(
+  buddy: Buddy,
+  itemId: BuddyShopItemId,
+  placement: BuddyRoomItemPlacement,
+) {
+  const item = SHOP_ITEMS[itemId];
+
+  if (!ROOM_ITEMS.includes(itemId)) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "방에 배치할 수 없는 아이템이에요.",
+    };
+  }
+
+  if (!buddy.inventory[itemId]) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "아직 가지고 있지 않은 아이템이에요.",
+    };
+  }
+
+  const equippedRoomItemIds = getEquippedRoomItemIds(buddy);
+  const nextEquippedRoomItemIds = equippedRoomItemIds.includes(itemId)
+    ? equippedRoomItemIds
+    : [...equippedRoomItemIds, itemId];
+
+  return {
+    ok: true as const,
+    buddy: {
+      ...buddy,
+      equippedRoomItemId: nextEquippedRoomItemIds[0],
+      equippedRoomItemIds: nextEquippedRoomItemIds,
+      roomItemPlacements: {
+        ...buddy.roomItemPlacements,
+        [itemId]: normalizeRoomItemPlacement(placement),
+      },
+      updatedAt: new Date().toISOString(),
+    },
+    message: `${item.label}를 방에 놓았어요.`,
+  };
+}
+
+export function removeBuddyRoomItem(buddy: Buddy, itemId: BuddyShopItemId) {
+  const item = SHOP_ITEMS[itemId];
+
+  if (!ROOM_ITEMS.includes(itemId)) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "방에서 치울 수 없는 아이템이에요.",
+    };
+  }
+
+  const nextEquippedRoomItemIds = getEquippedRoomItemIds(buddy).filter(
+    (equippedItemId) => equippedItemId !== itemId,
+  );
+
+  return {
+    ok: true as const,
+    buddy: {
+      ...buddy,
+      equippedRoomItemId: nextEquippedRoomItemIds[0],
+      equippedRoomItemIds: nextEquippedRoomItemIds,
+      roomItemPlacements: removeRoomItemPlacement(buddy.roomItemPlacements, itemId),
+      updatedAt: new Date().toISOString(),
+    },
+    message: `${item.label}를 방에서 치웠어요.`,
   };
 }
 
@@ -423,6 +567,50 @@ function removeInventoryItem(inventory: BuddyInventory, itemId: BuddyShopItemId)
   }
 
   return nextInventory;
+}
+
+export function normalizeRoomItemPlacement({
+  x,
+  y,
+}: BuddyRoomItemPlacement): BuddyRoomItemPlacement {
+  return {
+    x: clampPercent(x),
+    y: clampPercent(y),
+  };
+}
+
+function removeRoomItemPlacement(
+  placements: BuddyRoomItemPlacements,
+  itemId: BuddyShopItemId,
+): BuddyRoomItemPlacements {
+  const nextPlacements = { ...placements };
+  delete nextPlacements[itemId];
+  return nextPlacements;
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) {
+    return 50;
+  }
+
+  return Math.min(Math.max(Math.round(value), 0), 100);
+}
+
+function getEquippedRoomItemIds(buddy: Buddy): BuddyShopItemId[] {
+  const equippedRoomItemIds = Array.isArray(buddy.equippedRoomItemIds)
+    ? buddy.equippedRoomItemIds
+    : [];
+  const legacyItemId = buddy.equippedRoomItemId;
+  const roomItemIds = [
+    ...equippedRoomItemIds,
+    ...(legacyItemId ? [legacyItemId] : []),
+  ];
+
+  return Array.from(
+    new Set(
+      roomItemIds.filter((itemId) => ROOM_ITEMS.includes(itemId) && !!buddy.inventory[itemId]),
+    ),
+  );
 }
 
 function parseDate(value: string | undefined) {

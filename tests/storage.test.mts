@@ -142,7 +142,75 @@ test("loadSavedBuddy migrates older saved buddies without daily loop fields", as
   assert.equal(savedBuddy?.dailyCareStreak, 0);
   assert.equal(savedBuddy?.coins, 2530);
   assert.deepEqual(savedBuddy?.inventory, {});
-  assert.equal(savedBuddy?.equippedRoomItemId, undefined);
+  assert.deepEqual(savedBuddy?.equippedRoomItemIds, []);
+  assert.deepEqual(savedBuddy?.roomItemPlacements, {});
+});
+
+test("loadSavedBuddy migrates a legacy equipped room item into the room item list", async () => {
+  const storage = useMemoryStorage();
+  storage.setItem(
+    "dear-buddy.saved-buddy.v1",
+    JSON.stringify({
+      id: "old-room-buddy",
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      createdAt: "2026-07-17T00:00:00.000Z",
+      updatedAt: "2026-07-17T00:00:00.000Z",
+      lastCareAt: "2026-07-17T00:00:00.000Z",
+      coins: 2530,
+      inventory: { "pink-rug": 1 },
+      equippedRoomItemId: "pink-rug",
+      avatarProfile: {
+        bodyColor: "#c58b63",
+        accentColor: "#f2d0b5",
+        earShape: "round",
+        accessory: "ribbon",
+        cheekStyle: "oval",
+      },
+      stats: { affection: 35, hunger: 75, energy: 70, exp: 0 },
+    }),
+  );
+
+  const savedBuddy = await loadSavedBuddy(undefined, new Date("2026-07-17T01:00:00.000Z"));
+
+  assert.deepEqual(savedBuddy?.equippedRoomItemIds, ["pink-rug"]);
+});
+
+test("loadSavedBuddy keeps valid room item placements and drops invalid ones", async () => {
+  const storage = useMemoryStorage();
+  storage.setItem(
+    "dear-buddy.saved-buddy.v1",
+    JSON.stringify({
+      id: "placed-room-buddy",
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      createdAt: "2026-07-17T00:00:00.000Z",
+      updatedAt: "2026-07-17T00:00:00.000Z",
+      lastCareAt: "2026-07-17T00:00:00.000Z",
+      coins: 2530,
+      inventory: { "cozy-bed": 1, "fish-snack": 1 },
+      equippedRoomItemIds: ["cozy-bed"],
+      roomItemPlacements: {
+        "cozy-bed": { x: 42, y: 68 },
+        "fish-snack": { x: 10, y: 10 },
+        "stand-lamp": { x: 140, y: -20 },
+      },
+      avatarProfile: {
+        bodyColor: "#c58b63",
+        accentColor: "#f2d0b5",
+        earShape: "round",
+        accessory: "ribbon",
+        cheekStyle: "oval",
+      },
+      stats: { affection: 35, hunger: 75, energy: 70, exp: 0 },
+    }),
+  );
+
+  const savedBuddy = await loadSavedBuddy(undefined, new Date("2026-07-17T01:00:00.000Z"));
+
+  assert.deepEqual(savedBuddy?.roomItemPlacements, {
+    "cozy-bed": { x: 42, y: 68 },
+  });
 });
 
 test("loadSavedBuddy applies passive decay to stale saved buddies", async () => {

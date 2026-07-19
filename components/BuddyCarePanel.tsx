@@ -20,6 +20,7 @@ import {
   ROOM_ITEMS,
   SHOP_ITEMS,
 } from "@/lib/buddy";
+import { getRoomItemPlacement, getRoomPreviewClassName } from "@/lib/room-presentation";
 
 type BuddyCarePanelProps = {
   actionImagesMessage?: string;
@@ -38,16 +39,6 @@ const actionLabels: Record<BuddyAction, { label: string; description: string }> 
 };
 type BuddyView = "home" | "shop" | "decor" | "play" | "dex" | "collection" | "growth" | "settings";
 const shopItemIds = Object.keys(SHOP_ITEMS) as BuddyShopItemId[];
-const defaultRoomItemPlacements: Record<BuddyShopItemId, BuddyRoomItemPlacement> = {
-  "fish-snack": { x: 50, y: 50 },
-  "pink-rug": { x: 50, y: 74 },
-  "beach-ball": { x: 74, y: 70 },
-  "cozy-bed": { x: 28, y: 76 },
-  "wooden-shelf": { x: 28, y: 27 },
-  "stand-lamp": { x: 78, y: 59 },
-  "round-window": { x: 76, y: 25 },
-  "soft-cushion": { x: 62, y: 76 },
-};
 
 export default function BuddyCarePanel({
   actionImagesMessage,
@@ -558,6 +549,9 @@ function DecorPanel({
         <span>{equippedRoomItemIds.length > 0 ? `배치 ${equippedRoomItemIds.length}` : "기본 방"}</span>
       </div>
       <div className={getRoomPreviewClassName(equippedRoomItemIds, draggingItem?.itemId)} ref={roomPreviewRef}>
+        <div className="retro-room-wall-light" />
+        <div className="retro-room-baseboard" />
+        <div className="retro-room-floor-grid" />
         <div className="retro-room-window" />
         <div className="retro-room-shelf" />
         {equippedRoomItemIds.map((itemId) => (
@@ -626,15 +620,6 @@ function isRoomItemEquipped(buddy: Buddy, itemId: BuddyShopItemId) {
   return (buddy.equippedRoomItemIds ?? []).includes(itemId);
 }
 
-function getRoomPreviewClassName(equippedRoomItemIds: BuddyShopItemId[], draggingItemId?: BuddyShopItemId) {
-  const itemClassNames = equippedRoomItemIds.map((itemId) => `has-${itemId}`);
-  const draggingClassName = draggingItemId ? "is-dragging-furniture" : "";
-  const dropClassName = draggingItemId && ROOM_ITEMS.includes(draggingItemId) ? "is-drop-ready" : "";
-  return ["retro-room-preview", ...itemClassNames, draggingClassName, dropClassName]
-    .filter(Boolean)
-    .join(" ");
-}
-
 function RoomFurniture({
   itemId,
   onPointerDown,
@@ -653,10 +638,6 @@ function RoomFurniture({
       type="button"
     />
   );
-}
-
-function getRoomItemPlacement(buddy: Buddy, itemId: BuddyShopItemId) {
-  return buddy.roomItemPlacements?.[itemId] ?? defaultRoomItemPlacements[itemId];
 }
 
 function getRoomPlacementFromPointer(

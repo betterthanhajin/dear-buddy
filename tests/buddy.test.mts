@@ -32,7 +32,7 @@ test("createBuddy stores a named buddy with generated avatar profile and initial
   assert.equal(buddy.stats.exp, 0);
   assert.equal(buddy.coins, 2530);
   assert.deepEqual(buddy.inventory, {});
-  assert.equal(buddy.equippedRoomItemId, undefined);
+  assert.deepEqual(buddy.equippedRoomItemIds, []);
 });
 
 test("applyBuddyAction updates stats and clamps values", () => {
@@ -91,7 +91,7 @@ test("buyBuddyItem rejects purchases when coins are too low", () => {
   assert.equal(result.message, "코인이 부족해요.");
 });
 
-test("equipBuddyRoomItem equips an owned room item", () => {
+test("equipBuddyRoomItem toggles multiple owned room items", () => {
   const buddy = {
     ...createBuddy({
       name: "몽실이",
@@ -99,14 +99,20 @@ test("equipBuddyRoomItem equips an owned room item", () => {
       dominantColor: "#c58b63",
       accentColor: "#f2d0b5",
     }),
-    inventory: { "pink-rug": 1 },
+    inventory: { "cozy-bed": 1, "pink-rug": 1 },
   };
 
-  const result = equipBuddyRoomItem(buddy, "pink-rug");
+  const rug = equipBuddyRoomItem(buddy, "pink-rug");
+  const bed = equipBuddyRoomItem(rug.buddy, "cozy-bed");
+  const removedRug = equipBuddyRoomItem(bed.buddy, "pink-rug");
 
-  assert.equal(result.ok, true);
-  assert.equal(result.buddy.equippedRoomItemId, "pink-rug");
-  assert.equal(result.message, "핑크 러그를 방에 배치했어요.");
+  assert.equal(rug.ok, true);
+  assert.deepEqual(rug.buddy.equippedRoomItemIds, ["pink-rug"]);
+  assert.equal(rug.message, "핑크 러그를 방에 배치했어요.");
+  assert.deepEqual(bed.buddy.equippedRoomItemIds, ["pink-rug", "cozy-bed"]);
+  assert.equal(bed.message, "작은 침대를 방에 배치했어요.");
+  assert.deepEqual(removedRug.buddy.equippedRoomItemIds, ["cozy-bed"]);
+  assert.equal(removedRug.message, "핑크 러그를 방에서 치웠어요.");
 });
 
 test("claimMiniGameReward grants coins, experience, and a beach ball", () => {
@@ -165,7 +171,7 @@ test("applyBuddyItemEffect equips room items without consuming them", () => {
   const result = applyBuddyItemEffect(buddy, "pink-rug");
 
   assert.equal(result.ok, true);
-  assert.equal(result.buddy.equippedRoomItemId, "pink-rug");
+  assert.deepEqual(result.buddy.equippedRoomItemIds, ["pink-rug"]);
   assert.equal(result.buddy.inventory["pink-rug"], 1);
   assert.equal(result.message, "핑크 러그를 방에 배치했어요.");
 });

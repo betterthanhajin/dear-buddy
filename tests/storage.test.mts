@@ -142,7 +142,37 @@ test("loadSavedBuddy migrates older saved buddies without daily loop fields", as
   assert.equal(savedBuddy?.dailyCareStreak, 0);
   assert.equal(savedBuddy?.coins, 2530);
   assert.deepEqual(savedBuddy?.inventory, {});
-  assert.equal(savedBuddy?.equippedRoomItemId, undefined);
+  assert.deepEqual(savedBuddy?.equippedRoomItemIds, []);
+});
+
+test("loadSavedBuddy migrates a legacy equipped room item into the room item list", async () => {
+  const storage = useMemoryStorage();
+  storage.setItem(
+    "dear-buddy.saved-buddy.v1",
+    JSON.stringify({
+      id: "old-room-buddy",
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      createdAt: "2026-07-17T00:00:00.000Z",
+      updatedAt: "2026-07-17T00:00:00.000Z",
+      lastCareAt: "2026-07-17T00:00:00.000Z",
+      coins: 2530,
+      inventory: { "pink-rug": 1 },
+      equippedRoomItemId: "pink-rug",
+      avatarProfile: {
+        bodyColor: "#c58b63",
+        accentColor: "#f2d0b5",
+        earShape: "round",
+        accessory: "ribbon",
+        cheekStyle: "oval",
+      },
+      stats: { affection: 35, hunger: 75, energy: 70, exp: 0 },
+    }),
+  );
+
+  const savedBuddy = await loadSavedBuddy(undefined, new Date("2026-07-17T01:00:00.000Z"));
+
+  assert.deepEqual(savedBuddy?.equippedRoomItemIds, ["pink-rug"]);
 });
 
 test("loadSavedBuddy applies passive decay to stale saved buddies", async () => {

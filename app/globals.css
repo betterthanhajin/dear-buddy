@@ -831,6 +831,127 @@ button {
   transform: rotate(-19deg);
 }
 
+.retro-item-sprite.is-cozy-bed {
+  width: 88px;
+  height: 62px;
+  margin-top: 7px;
+  border-radius: 10px 10px 18px 18px;
+  background:
+    linear-gradient(90deg, #fff5ef 0 32%, transparent 33%),
+    linear-gradient(#f8c4c8 0 42%, #b9836a 43% 100%);
+  box-shadow:
+    inset 0 -8px 0 rgba(101, 65, 52, 0.18),
+    0 5px 0 rgba(116, 83, 72, 0.16);
+}
+
+.retro-item-sprite.is-cozy-bed::before {
+  left: 6px;
+  top: 10px;
+  width: 30px;
+  height: 22px;
+  border: 2px solid #4b413c;
+  border-radius: 8px;
+  background: #fff5ef;
+}
+
+.retro-item-sprite.is-cozy-bed::after {
+  left: 0;
+  right: 0;
+  bottom: -7px;
+  height: 8px;
+  background:
+    linear-gradient(90deg, #4b413c 0 9px, transparent 10px calc(100% - 10px), #4b413c calc(100% - 9px));
+}
+
+.retro-item-sprite.is-wooden-shelf {
+  width: 86px;
+  height: 60px;
+  margin-top: 8px;
+  border: 0;
+  background:
+    linear-gradient(#4b413c 0 3px, transparent 4px),
+    linear-gradient(90deg, transparent 0 8px, #4b413c 9px 13px, transparent 14px 70px, #4b413c 71px 75px, transparent 76px),
+    linear-gradient(#b9825f 0 22px, transparent 23px 32px, #d49a70 33px 50px, transparent 51px);
+}
+
+.retro-item-sprite.is-wooden-shelf::before {
+  left: 18px;
+  top: 11px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #4b413c;
+  border-radius: 50%;
+  background: #9ed996;
+}
+
+.retro-item-sprite.is-wooden-shelf::after {
+  right: 18px;
+  top: 8px;
+  width: 15px;
+  height: 20px;
+  border: 2px solid #4b413c;
+  background: #fff5ef;
+}
+
+.retro-item-sprite.is-stand-lamp {
+  width: 64px;
+  height: 76px;
+  border: 0;
+  background:
+    linear-gradient(#4b413c 0 100%) 30px 34px / 4px 30px no-repeat,
+    linear-gradient(#4b413c 0 100%) 15px 64px / 34px 5px no-repeat;
+}
+
+.retro-item-sprite.is-stand-lamp::before {
+  left: 12px;
+  top: 2px;
+  width: 40px;
+  height: 32px;
+  border: 3px solid #4b413c;
+  border-radius: 16px 16px 7px 7px;
+  background: #ffe38a;
+  box-shadow: 0 0 18px rgba(255, 211, 112, 0.5);
+}
+
+.retro-item-sprite.is-stand-lamp::after {
+  left: 25px;
+  top: 68px;
+  width: 14px;
+  height: 6px;
+  border-radius: 999px;
+  background: #4b413c;
+}
+
+.retro-item-sprite.is-round-window {
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 0 47%, #4b413c 48% 52%, transparent 53%),
+    linear-gradient(0deg, transparent 0 47%, #4b413c 48% 52%, transparent 53%),
+    linear-gradient(#a9d8ef 0 50%, #fff4cf 51% 100%);
+  box-shadow:
+    inset 0 0 0 6px #9b6f58,
+    0 5px 0 rgba(116, 83, 72, 0.16);
+}
+
+.retro-item-sprite.is-soft-cushion {
+  width: 74px;
+  height: 58px;
+  margin-top: 9px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 25% 28%, rgba(255, 255, 255, 0.78) 0 8px, transparent 9px),
+    linear-gradient(#ffd0dc, #eda2b2);
+  box-shadow:
+    inset -6px -7px 0 rgba(196, 93, 118, 0.22),
+    0 5px 0 rgba(116, 83, 72, 0.16);
+}
+
+.retro-item-sprite.is-soft-cushion::before {
+  inset: 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.72);
+  border-radius: 18px;
+}
+
 .retro-room-preview {
   position: relative;
   min-height: 300px;
@@ -853,7 +974,8 @@ button {
   background: linear-gradient(#9fd0ec 0 50%, #fff7ef 51% 100%);
 }
 
-.retro-room-shelf {
+.retro-room-shelf,
+.retro-room-wooden-shelf {
   position: absolute;
   left: 12%;
   top: 25%;
@@ -861,6 +983,85 @@ button {
   height: 8px;
   border: 2px solid #8c634c;
   background: #b88560;
+}
+
+.retro-room-round-window,
+.retro-room-wooden-shelf,
+.retro-room-lamp,
+.retro-room-bed,
+.retro-room-cushion {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.retro-room-round-window {
+  right: 12%;
+  top: 14%;
+  width: 82px;
+  height: 82px;
+  border: 5px solid #9b6f58;
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 0 48%, #9b6f58 49% 51%, transparent 52%),
+    linear-gradient(0deg, transparent 0 48%, #9b6f58 49% 51%, transparent 52%),
+    linear-gradient(#9fd0ec 0 52%, #fff4cf 53% 100%);
+}
+
+.retro-room-wooden-shelf {
+  left: 10%;
+  top: 19%;
+  width: 128px;
+  height: 12px;
+  box-shadow:
+    18px -16px 0 -2px #9ed996,
+    65px -18px 0 -1px #fff5ef;
+}
+
+.retro-room-lamp {
+  right: 12%;
+  bottom: 25%;
+  width: 58px;
+  height: 112px;
+  background:
+    linear-gradient(#4b413c 0 100%) 27px 42px / 4px 52px no-repeat,
+    linear-gradient(#4b413c 0 100%) 12px 93px / 34px 5px no-repeat;
+}
+
+.retro-room-lamp::before {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 42px;
+  height: 36px;
+  border: 3px solid #4b413c;
+  border-radius: 18px 18px 8px 8px;
+  background: #ffe38a;
+  box-shadow: 0 0 24px rgba(255, 211, 112, 0.55);
+  content: "";
+}
+
+.retro-room-bed {
+  left: 8%;
+  bottom: 15%;
+  width: 148px;
+  height: 78px;
+  border: 4px solid #4b413c;
+  border-radius: 12px 12px 20px 20px;
+  background:
+    linear-gradient(90deg, #fff5ef 0 34%, transparent 35%),
+    linear-gradient(#f8c4c8 0 45%, #b9836a 46% 100%);
+}
+
+.retro-room-cushion {
+  right: 25%;
+  bottom: 18%;
+  width: 70px;
+  height: 44px;
+  border: 3px solid #4b413c;
+  border-radius: 20px;
+  background: linear-gradient(#ffd0dc, #eda2b2);
+  box-shadow: inset -5px -6px 0 rgba(196, 93, 118, 0.22);
 }
 
 .retro-room-rug {
@@ -877,6 +1078,18 @@ button {
 }
 
 .retro-room-preview.has-pink-rug .retro-room-rug {
+  opacity: 1;
+}
+
+.retro-room-preview.has-round-window .retro-room-window {
+  opacity: 0;
+}
+
+.retro-room-preview.has-round-window .retro-room-round-window,
+.retro-room-preview.has-wooden-shelf .retro-room-wooden-shelf,
+.retro-room-preview.has-stand-lamp .retro-room-lamp,
+.retro-room-preview.has-cozy-bed .retro-room-bed,
+.retro-room-preview.has-soft-cushion .retro-room-cushion {
   opacity: 1;
 }
 

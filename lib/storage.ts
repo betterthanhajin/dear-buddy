@@ -348,6 +348,7 @@ function normalizeSavedBuddy(value: unknown): Buddy | null {
     dailyCareStreak: candidate.dailyCareStreak ?? 0,
     coins: typeof candidate.coins === "number" ? candidate.coins : 2530,
     inventory: normalizeInventory(candidate.inventory),
+    equippedRoomItemIds: normalizeEquippedRoomItemIds(candidate),
     avatarProfile: candidate.avatarProfile as Buddy["avatarProfile"],
     stats: {
       affection: candidate.stats.affection,
@@ -391,6 +392,25 @@ function normalizeInventory(value: unknown): BuddyInventory {
 
     return inventory;
   }, {});
+}
+
+function normalizeEquippedRoomItemIds(candidate: Partial<Buddy>): BuddyShopItemId[] {
+  const inventory = normalizeInventory(candidate.inventory);
+  const roomItemIds = [
+    ...(Array.isArray(candidate.equippedRoomItemIds) ? candidate.equippedRoomItemIds : []),
+    ...(typeof candidate.equippedRoomItemId === "string" ? [candidate.equippedRoomItemId] : []),
+  ];
+
+  return Array.from(
+    new Set(
+      roomItemIds.filter(
+        (itemId): itemId is BuddyShopItemId =>
+          itemId in SHOP_ITEMS &&
+          SHOP_ITEMS[itemId as BuddyShopItemId].type === "room" &&
+          !!inventory[itemId as BuddyShopItemId],
+      ),
+    ),
+  );
 }
 
 function isActionImageMap(value: unknown): value is BuddyActionImages {

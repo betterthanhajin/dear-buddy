@@ -395,22 +395,17 @@ function CollectionPanel({
     <section className="retro-card retro-collection-card">
       <div className="retro-section-head">
         <h2>다마고치 컬렉션</h2>
-        <span>보유 {ownedItemCount + 1} / 8</span>
+        <span>보유 {ownedItemCount + 1} / {shopItemIds.length + 1}</span>
       </div>
       <div className="retro-collection-row">
         <CollectionTile active image={idleImageDataUrl} label={buddy.name} level={level} />
-        <CollectionTile
-          active={!!buddy.inventory["fish-snack"]}
-          label={buddy.inventory["fish-snack"] ? "생선 간식" : "???"}
-        />
-        <CollectionTile
-          active={!!buddy.inventory["pink-rug"]}
-          label={buddy.inventory["pink-rug"] ? "핑크 러그" : "???"}
-        />
-        <CollectionTile
-          active={!!buddy.inventory["beach-ball"]}
-          label={buddy.inventory["beach-ball"] ? "비치볼" : "???"}
-        />
+        {shopItemIds.map((itemId) => (
+          <CollectionTile
+            active={!!buddy.inventory[itemId]}
+            key={itemId}
+            label={buddy.inventory[itemId] ? SHOP_ITEMS[itemId].label : "???"}
+          />
+        ))}
       </div>
     </section>
   );
@@ -435,6 +430,7 @@ function ShopPanel({
         {shopItemIds.map((itemId) => {
           const item = SHOP_ITEMS[itemId];
           const ownedCount = buddy.inventory[itemId] ?? 0;
+          const isEquipped = isRoomItemEquipped(buddy, itemId);
 
           return (
             <article className="retro-shop-card" key={itemId}>
@@ -460,7 +456,7 @@ function ShopPanel({
                 onClick={() => onUse(itemId)}
                 type="button"
               >
-                {item.type === "room" ? "배치" : "사용"}
+                {item.type === "room" ? (isEquipped ? "치우기" : "배치") : "사용"}
               </button>
             </article>
           );
@@ -479,16 +475,23 @@ function DecorPanel({
   idleImageDataUrl?: string;
   onEquip: (itemId: BuddyShopItemId) => void;
 }) {
+  const equippedRoomItemIds = buddy.equippedRoomItemIds ?? [];
+
   return (
     <section className="retro-card retro-collection-card">
       <div className="retro-section-head">
         <h2>꾸미기</h2>
-        <span>{buddy.equippedRoomItemId ? "배치 완료" : "기본 방"}</span>
+        <span>{equippedRoomItemIds.length > 0 ? `배치 ${equippedRoomItemIds.length}` : "기본 방"}</span>
       </div>
-      <div className={`retro-room-preview ${buddy.equippedRoomItemId === "pink-rug" ? "has-pink-rug" : ""}`}>
+      <div className={getRoomPreviewClassName(equippedRoomItemIds)}>
         <div className="retro-room-window" />
+        <div className="retro-room-round-window" />
         <div className="retro-room-shelf" />
+        <div className="retro-room-wooden-shelf" />
+        <div className="retro-room-lamp" />
+        <div className="retro-room-bed" />
         <div className="retro-room-rug" />
+        <div className="retro-room-cushion" />
         <div className="retro-room-buddy">
           {idleImageDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -502,7 +505,7 @@ function DecorPanel({
         {ROOM_ITEMS.map((itemId) => {
           const item = SHOP_ITEMS[itemId];
           const isOwned = !!buddy.inventory[itemId];
-          const isEquipped = buddy.equippedRoomItemId === itemId;
+          const isEquipped = isRoomItemEquipped(buddy, itemId);
 
           return (
             <button
@@ -513,13 +516,26 @@ function DecorPanel({
               type="button"
             >
               <span>{item.label}</span>
-              <small>{isOwned ? (isEquipped ? "배치 중이에요." : "방에 배치하기") : "상점에서 먼저 구매해 주세요."}</small>
+              <small>
+                {isOwned
+                  ? (isEquipped ? "배치 중이에요. 누르면 치워요." : "방에 배치하기")
+                  : "상점에서 먼저 구매해 주세요."}
+              </small>
             </button>
           );
         })}
       </div>
     </section>
   );
+}
+
+function isRoomItemEquipped(buddy: Buddy, itemId: BuddyShopItemId) {
+  return (buddy.equippedRoomItemIds ?? []).includes(itemId);
+}
+
+function getRoomPreviewClassName(equippedRoomItemIds: BuddyShopItemId[]) {
+  const itemClassNames = equippedRoomItemIds.map((itemId) => `has-${itemId}`);
+  return ["retro-room-preview", ...itemClassNames].join(" ");
 }
 
 function PlayPanel({ onReward }: { onReward: () => void }) {

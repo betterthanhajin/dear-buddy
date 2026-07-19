@@ -11,3 +11,10 @@ test("the backup route preserves the previous Dear Buddy app", () => {
 
   assert.match(source, /DearBuddyApp/);
 });
+
+test("the home route renders only the new tamagotchi device", () => {
+  const source = readFileSync(resolve(repoRoot, "app/page.tsx"), "utf8");
+
+  assert.match(source, /TamagotchiDevice/);
+  assert.doesNotMatch(source, /DearBuddyApp/);
+});

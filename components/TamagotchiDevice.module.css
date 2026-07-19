@@ -1,0 +1,200 @@
+.page {
+  display: flex;
+  min-height: 100svh;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 16px;
+  background: #f7f0e8;
+  font-family: var(--font-geist-mono), "Courier New", monospace;
+}
+
+.device {
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 2 / 3;
+  flex: none;
+}
+
+.frame {
+  z-index: 1;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.screen {
+  position: absolute;
+  z-index: 2;
+  top: 11.9%;
+  left: 13.4%;
+  display: grid;
+  width: 73.2%;
+  height: 55.2%;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  border: 2px solid #302824;
+  border-radius: 15% / 12%;
+  background: #fffaf3;
+  box-shadow: inset 0 0 18px rgb(74 55 48 / 18%);
+  color: #2f2824;
+  image-rendering: pixelated;
+  padding: 5.5% 6% 6%;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #544941;
+  padding-bottom: 4%;
+  font-size: clamp(11px, 3.2vw, 16px);
+  font-weight: 800;
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.pet {
+  width: 88%;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.petReacting {
+  animation: pet-bounce 480ms ease-out both;
+}
+
+.reaction {
+  position: absolute;
+  top: 12%;
+  right: 5%;
+  border: 1px solid #5f4d45;
+  border-radius: 999px;
+  background: #fff0ef;
+  padding: 4px 7px;
+  color: #b64e5b;
+  font-size: clamp(9px, 2.5vw, 12px);
+  font-weight: 900;
+  animation: reaction-pop 650ms ease-out both;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5%;
+  border-top: 1px solid #544941;
+  padding-top: 5%;
+}
+
+.stat {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  font-size: clamp(8px, 2.4vw, 11px);
+  font-weight: 800;
+}
+
+.stat i {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid #3c342f;
+  background: #fff;
+}
+
+.stat b {
+  display: block;
+  height: 100%;
+}
+
+.food {
+  background: #e7b674;
+}
+
+.love {
+  background: #ed7f8e;
+}
+
+.rest {
+  background: #8ea6df;
+}
+
+.control {
+  position: absolute;
+  z-index: 3;
+  top: 76%;
+  width: 19%;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.control:focus-visible {
+  outline: 3px solid #7f3946;
+  outline-offset: 4px;
+}
+
+.control:not(:disabled) {
+  cursor: pointer;
+}
+
+.menuControl {
+  left: 12.3%;
+}
+
+.loveControl {
+  left: 40.5%;
+}
+
+.moreControl {
+  right: 12.3%;
+}
+
+@keyframes reaction-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) scale(1);
+  }
+}
+
+@keyframes pet-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  45% {
+    transform: translateY(-7%) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction,
+  .petReacting {
+    animation: none;
+  }
+}
+
+@media (max-height: 700px) {
+  .device {
+    width: min(100%, 360px, calc((100svh - 24px) * 2 / 3));
+  }
+}

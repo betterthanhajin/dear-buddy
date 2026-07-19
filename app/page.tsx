@@ -1,5 +1,5 @@
-import DearBuddyApp from "@/components/DearBuddyApp";
+import TamagotchiDevice from "@/components/TamagotchiDevice";
 
 export default function Home() {
-  return <DearBuddyApp />;
+  return <TamagotchiDevice />;
 }

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   applyBuddyAction,
+  applyBuddyItemEffect,
   applyDailyCareBonus,
   applyTimeDecay,
   buyBuddyItem,
@@ -122,6 +123,51 @@ test("claimMiniGameReward grants coins, experience, and a beach ball", () => {
   assert.equal(result.buddy.stats.exp, 12);
   assert.equal(result.buddy.inventory["beach-ball"], 1);
   assert.equal(result.message, "공놀이 성공! 코인 +30, 경험치 +12를 받았어요.");
+});
+
+test("applyBuddyItemEffect applies consumable item effects and consumes one item", () => {
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    }),
+    inventory: { "fish-snack": 1, "beach-ball": 1 },
+    stats: { affection: 80, hunger: 70, energy: 70, exp: 0 },
+  };
+
+  const fed = applyBuddyItemEffect(buddy, "fish-snack");
+  const played = applyBuddyItemEffect(fed.buddy, "beach-ball");
+
+  assert.equal(fed.ok, true);
+  assert.equal(fed.buddy.stats.hunger, 95);
+  assert.equal(fed.buddy.inventory["fish-snack"], undefined);
+  assert.equal(fed.message, "생선 간식을 먹었어요. 포만감이 올랐어요.");
+  assert.equal(played.ok, true);
+  assert.equal(played.buddy.stats.affection, 88);
+  assert.equal(played.buddy.stats.exp, 10);
+  assert.equal(played.buddy.inventory["beach-ball"], undefined);
+  assert.equal(played.message, "비치볼로 놀았어요. 행복도와 경험치가 올랐어요.");
+});
+
+test("applyBuddyItemEffect equips room items without consuming them", () => {
+  const buddy = {
+    ...createBuddy({
+      name: "몽실이",
+      photoDataUrl: "data:image/png;base64,abc",
+      dominantColor: "#c58b63",
+      accentColor: "#f2d0b5",
+    }),
+    inventory: { "pink-rug": 1 },
+  };
+
+  const result = applyBuddyItemEffect(buddy, "pink-rug");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.buddy.equippedRoomItemId, "pink-rug");
+  assert.equal(result.buddy.inventory["pink-rug"], 1);
+  assert.equal(result.message, "핑크 러그를 방에 배치했어요.");
 });
 
 test("getBuddyLevel derives level and progress from total experience", () => {

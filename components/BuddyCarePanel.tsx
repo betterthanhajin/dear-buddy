@@ -656,7 +656,7 @@ function RoomFurniture({
 }
 
 function getRoomItemPlacement(buddy: Buddy, itemId: BuddyShopItemId) {
-  return buddy.roomItemPlacements[itemId] ?? defaultRoomItemPlacements[itemId];
+  return buddy.roomItemPlacements?.[itemId] ?? defaultRoomItemPlacements[itemId];
 }
 
 function getRoomPlacementFromPointer(

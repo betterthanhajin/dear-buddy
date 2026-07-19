@@ -85,22 +85,31 @@ export const MINI_GAME_REWARD = {
 };
 export const SHOP_ITEMS: Record<
   BuddyShopItemId,
-  { description: string; label: string; price: number; type: "consumable" | "room" | "toy" }
+  {
+    description: string;
+    effectLabel: string;
+    label: string;
+    price: number;
+    type: "consumable" | "room" | "toy";
+  }
 > = {
   "fish-snack": {
     description: "포만감을 채우는 작은 간식이에요.",
+    effectLabel: "포만감 +25",
     label: "생선 간식",
     price: 120,
     type: "consumable",
   },
   "pink-rug": {
     description: "방을 폭신하게 바꾸는 러그예요.",
+    effectLabel: "방 꾸미기",
     label: "핑크 러그",
     price: 180,
     type: "room",
   },
   "beach-ball": {
     description: "놀이 보상으로도 얻을 수 있는 공이에요.",
+    effectLabel: "행복도 +8, 경험치 +10",
     label: "비치볼",
     price: 160,
     type: "toy",
@@ -249,6 +258,46 @@ export function equipBuddyRoomItem(buddy: Buddy, itemId: BuddyShopItemId) {
   };
 }
 
+export function applyBuddyItemEffect(buddy: Buddy, itemId: BuddyShopItemId) {
+  if (!buddy.inventory[itemId]) {
+    return {
+      ok: false as const,
+      buddy,
+      message: "아직 가지고 있지 않은 아이템이에요.",
+    };
+  }
+
+  if (itemId === "pink-rug") {
+    return equipBuddyRoomItem(buddy, itemId);
+  }
+
+  const stats =
+    itemId === "fish-snack"
+      ? {
+          ...buddy.stats,
+          hunger: clampStat(buddy.stats.hunger + 25),
+        }
+      : {
+          ...buddy.stats,
+          affection: clampStat(buddy.stats.affection + 8),
+          exp: buddy.stats.exp + 10,
+        };
+
+  return {
+    ok: true as const,
+    buddy: {
+      ...buddy,
+      inventory: removeInventoryItem(buddy.inventory, itemId),
+      stats,
+      updatedAt: new Date().toISOString(),
+    },
+    message:
+      itemId === "fish-snack"
+        ? "생선 간식을 먹었어요. 포만감이 올랐어요."
+        : "비치볼로 놀았어요. 행복도와 경험치가 올랐어요.",
+  };
+}
+
 export function claimMiniGameReward(buddy: Buddy) {
   return {
     buddy: {
@@ -361,6 +410,19 @@ function addInventoryItem(inventory: BuddyInventory, itemId: BuddyShopItemId): B
     ...inventory,
     [itemId]: (inventory[itemId] ?? 0) + 1,
   };
+}
+
+function removeInventoryItem(inventory: BuddyInventory, itemId: BuddyShopItemId): BuddyInventory {
+  const nextInventory = { ...inventory };
+  const nextCount = (nextInventory[itemId] ?? 0) - 1;
+
+  if (nextCount > 0) {
+    nextInventory[itemId] = nextCount;
+  } else {
+    delete nextInventory[itemId];
+  }
+
+  return nextInventory;
 }
 
 function parseDate(value: string | undefined) {

@@ -128,7 +128,7 @@ button {
 .retro-crt-screen {
   position: relative;
   overflow: hidden;
-  border: 6px solid #251f1e;
+  border: 2px solid #251f1e;
   border-radius: 28px;
   background:
     repeating-linear-gradient(
@@ -592,7 +592,8 @@ button {
 }
 
 .retro-action-card:disabled,
-.retro-buy-button:disabled {
+.retro-buy-button:disabled,
+.retro-use-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -628,12 +629,16 @@ button {
 }
 
 .retro-bottom-nav {
+  position: sticky;
+  bottom: 8px;
+  z-index: 20;
   display: grid;
   grid-template-columns: repeat(6, 1fr) minmax(110px, 0.9fr);
   gap: 8px;
   align-items: center;
   border-radius: 20px;
   background: #fff8f0;
+  box-shadow: 0 10px 26px rgba(84, 58, 47, 0.18);
   padding: 10px;
 }
 
@@ -663,6 +668,7 @@ button {
 .retro-shop-card {
   display: grid;
   gap: 10px;
+  align-content: start;
   border: 2px solid var(--retro-line);
   border-radius: 18px;
   background: #fff7ef;
@@ -676,7 +682,7 @@ button {
 }
 
 .retro-shop-card p {
-  min-height: 48px;
+  min-height: 56px;
   color: var(--retro-muted);
   font-size: 13px;
   line-height: 1.45;
@@ -700,34 +706,129 @@ button {
   font-weight: 900;
 }
 
+.retro-use-button {
+  border: 2px solid #75aa71;
+  border-radius: 12px;
+  background: linear-gradient(#d9f2cf, #9ed996);
+  padding: 9px;
+  color: #42663d;
+  font-weight: 900;
+}
+
+.retro-effect-chip {
+  border: 2px solid #e4c8b7;
+  border-radius: 999px;
+  background: #fffaf4;
+  padding: 6px 8px;
+  color: #876456;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .retro-item-sprite {
+  position: relative;
   width: 76px;
   height: 76px;
   margin: 0 auto;
-  border: 2px solid #4b413c;
+  border: 3px solid #4b413c;
   image-rendering: pixelated;
 }
 
+.retro-item-sprite::before,
+.retro-item-sprite::after {
+  position: absolute;
+  content: "";
+}
+
 .retro-item-sprite.is-fish-snack {
-  border-radius: 55% 45% 48% 52%;
+  width: 84px;
+  height: 58px;
+  margin-top: 9px;
+  border-radius: 54% 40% 42% 54%;
   background:
-    radial-gradient(circle at 35% 42%, #20384b 0 4px, transparent 5px),
-    linear-gradient(135deg, transparent 0 66%, #7eb6d8 67% 100%),
-    #9fcce6;
+    radial-gradient(circle at 34% 39%, #243542 0 4px, transparent 5px),
+    radial-gradient(ellipse at 49% 30%, rgba(255, 255, 255, 0.78) 0 12px, transparent 13px),
+    linear-gradient(180deg, #bce2ef 0 45%, #83bfd9 46% 100%);
+  box-shadow:
+    inset -8px -8px 0 rgba(70, 140, 170, 0.28),
+    0 5px 0 rgba(116, 83, 72, 0.16);
+}
+
+.retro-item-sprite.is-fish-snack::before {
+  right: -20px;
+  top: 15px;
+  width: 30px;
+  height: 28px;
+  border: 3px solid #4b413c;
+  border-left: 0;
+  background: #83bfd9;
+  clip-path: polygon(0 50%, 100% 0, 86% 50%, 100% 100%);
+}
+
+.retro-item-sprite.is-fish-snack::after {
+  left: 31px;
+  top: 21px;
+  width: 22px;
+  height: 15px;
+  border-top: 3px solid rgba(75, 65, 60, 0.42);
+  border-radius: 50%;
 }
 
 .retro-item-sprite.is-pink-rug {
+  width: 86px;
+  height: 62px;
+  margin-top: 7px;
   border-radius: 50%;
   background:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.36) 0 3px, transparent 3px 8px),
-    #f8b7bd;
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.44) 0 3px, transparent 3px 8px),
+    repeating-linear-gradient(90deg, rgba(196, 94, 113, 0.16) 0 5px, transparent 5px 12px),
+    #f7b6bd;
+  box-shadow:
+    inset 0 -8px 0 rgba(219, 124, 139, 0.3),
+    0 5px 0 rgba(116, 83, 72, 0.14);
+}
+
+.retro-item-sprite.is-pink-rug::before {
+  inset: 8px 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+}
+
+.retro-item-sprite.is-pink-rug::after {
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(171, 85, 100, 0.28);
 }
 
 .retro-item-sprite.is-beach-ball {
   border-radius: 50%;
   background:
-    linear-gradient(120deg, transparent 0 42%, #fff5ef 43% 57%, transparent 58%),
-    linear-gradient(40deg, #f28f98 0 50%, #f7d5d2 51% 100%);
+    radial-gradient(circle at 31% 23%, rgba(255, 255, 255, 0.85) 0 9px, transparent 10px),
+    conic-gradient(from -30deg, #f28f98 0 27%, #fff5ef 28% 48%, #f7c4c8 49% 70%, #f28f98 71% 100%);
+  box-shadow:
+    inset -8px -10px 0 rgba(191, 91, 107, 0.24),
+    0 5px 0 rgba(116, 83, 72, 0.16);
+}
+
+.retro-item-sprite.is-beach-ball::before {
+  left: 31px;
+  top: -3px;
+  width: 3px;
+  height: 78px;
+  background: rgba(75, 65, 60, 0.32);
+  transform: rotate(34deg);
+}
+
+.retro-item-sprite.is-beach-ball::after {
+  left: 9px;
+  top: 34px;
+  width: 58px;
+  height: 3px;
+  background: rgba(75, 65, 60, 0.28);
+  transform: rotate(-19deg);
 }
 
 .retro-room-preview {

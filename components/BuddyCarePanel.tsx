@@ -7,6 +7,7 @@ import { getBuddyActionReaction } from "@/lib/buddy-action-reaction";
 import type { Buddy, BuddyAction, BuddyShopItemId } from "@/lib/buddy";
 import {
   applyBuddyAction,
+  applyBuddyItemEffect,
   applyDailyCareBonus,
   buyBuddyItem,
   claimMiniGameReward,
@@ -99,6 +100,15 @@ export default function BuddyCarePanel({
 
   const handleEquipRoomItem = (itemId: BuddyShopItemId) => {
     const result = equipBuddyRoomItem(buddy, itemId);
+    setFeatureMessage(result.message);
+
+    if (result.ok) {
+      onChange(result.buddy);
+    }
+  };
+
+  const handleUseItem = (itemId: BuddyShopItemId) => {
+    const result = applyBuddyItemEffect(buddy, itemId);
     setFeatureMessage(result.message);
 
     if (result.ok) {
@@ -233,7 +243,7 @@ export default function BuddyCarePanel({
         ) : null}
 
         {activeView === "shop" ? (
-          <ShopPanel buddy={buddy} onBuy={handleBuyItem} />
+          <ShopPanel buddy={buddy} onBuy={handleBuyItem} onUse={handleUseItem} />
         ) : null}
 
         {activeView === "decor" ? (
@@ -409,9 +419,11 @@ function CollectionPanel({
 function ShopPanel({
   buddy,
   onBuy,
+  onUse,
 }: {
   buddy: Buddy;
   onBuy: (itemId: BuddyShopItemId) => void;
+  onUse: (itemId: BuddyShopItemId) => void;
 }) {
   return (
     <section className="retro-card retro-collection-card">
@@ -433,6 +445,7 @@ function ShopPanel({
                 <span>보유 {ownedCount}</span>
                 <span>{item.price} 코인</span>
               </div>
+              <span className="retro-effect-chip">{item.effectLabel}</span>
               <button
                 className="retro-buy-button"
                 disabled={buddy.coins < item.price}
@@ -440,6 +453,14 @@ function ShopPanel({
                 type="button"
               >
                 구매
+              </button>
+              <button
+                className="retro-use-button"
+                disabled={ownedCount <= 0}
+                onClick={() => onUse(itemId)}
+                type="button"
+              >
+                {item.type === "room" ? "배치" : "사용"}
               </button>
             </article>
           );

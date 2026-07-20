@@ -2,7 +2,7 @@
 
 ## Scope and visual truth
 
-- Route: `http://127.0.0.1:3001/`
+- Route: `http://localhost:3002/` (production build)
 - Source visual truth:
   - `/Users/hajin/Documents/agents/dear-buddy-reference/tv-frame.png`
   - `/Users/hajin/Documents/agents/dear-buddy-reference/game-scenes.png`
@@ -14,10 +14,11 @@
 
 | Capture | Viewport | State | Evidence |
 | --- | --- | --- | --- |
-| Mobile initial | 390 x 844 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-mobile-initial-final.png` |
+| Mobile initial | 390 x 844 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-mobile-production-initial.png` |
+| Mobile reaction | 390 x 844 | `/`, center control clicked, LOVE 88 and LOVE +1 | `.superpowers/sdd/screenshots/home-mobile-production-after-love.png` |
 | Mobile divider focus | 390 x 844 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-mobile-initial-final-stage-focus.png` |
-| Backup route | 390 x 844 | `/backup`, creator screen | `.superpowers/sdd/screenshots/backup-mobile.png` |
-| Desktop initial | 1280 x 900 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-desktop-initial-final.png` |
+| Backup route | 390 x 844 | `/backup`, creator screen | `.superpowers/sdd/screenshots/backup-mobile-production.png` |
+| Desktop initial | 1440 x 900 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-desktop-production-initial.png` |
 | Full-frame comparison | normalized source and implementation | TV frame and controls | `.superpowers/sdd/screenshots/comparison-mobile-frame-full.png` |
 | Focused screen comparison | normalized source and implementation | HUD, pet, divider, stats | `.superpowers/sdd/screenshots/comparison-mobile-screen-focus.png` |
 
@@ -25,16 +26,17 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
 
 ## Loading and viewport checks
 
-- Mobile final capture waited for network idle, an additional 1500 ms, and both target images to report `complete: true` with `naturalWidth > 0`.
+- Production captures waited for network idle and both target images to finish loading.
 - The final mobile frame is fully visible. The frame measures 358 x 537 px inside a 390 x 844 px viewport, with no horizontal overflow.
 - The pet image is complete at 1024 x 1024 intrinsic size and fully visible inside the stage.
-- Desktop final capture measures the device at 420 x 630 px, centered at x=430, y=135. Its measured ratio is exactly 0.6666667 and it has no horizontal overflow.
-- `/backup` rendered the previous creator screen and its accessible upload, name, and submit controls at 390 x 844.
+- Desktop final capture renders the device at 420 x 630 px, centered in a 1440 x 900 viewport. Its ratio remains exactly 2:3 and it has no horizontal overflow.
+- `/backup` rendered the previous creator screen at 390 x 844. Uploading the reference image and entering a name enabled the submit control, which verifies that the preserved client flow hydrates.
 
 ## Full-view and focused-region comparison
 
 - Full view: `comparison-mobile-frame-full.png` compares the supplied frame with the rendered device. The implementation uses the supplied frame asset without approximation, preserves its 2:3 silhouette, and aligns all three transparent hit targets to the physical controls.
 - Focused region: `comparison-mobile-screen-focus.png` compares the primary game scene with the rendered screen. The pixel pet, monochrome HUD, cream screen surface, bounded stage, and three status bars retain the supplied scene's retro game language. The product intentionally uses the Task 3 `Lv.01`, `LOVE 87`, `FOOD`, `LOVE`, and `REST` content instead of recreating the reference screen verbatim.
+- Final comparison: both source images and the production initial and reaction captures were opened together in one `view_image` comparison input. No new P0, P1, or P2 visual mismatch was found.
 
 ## Required fidelity surfaces
 
@@ -47,8 +49,10 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
 ## Interaction and console checks
 
 - The center control was located through `aria-label="버디 쓰다듬기"`, is enabled, and has a 68 x 68 px mobile hit target.
-- In this `agent-browser` run against the existing port 3001 dev server, a native click reached the control, but React did not attach a client renderer in the browser process. `LOVE 87` therefore did not change to `LOVE 88` and `LOVE +1` could not be captured from the browser. The compiled client chunk includes the expected `onClick={() => setState(petBuddy)}` handler, and the existing `petBuddy increases affection and advances the reaction sequence` test passed.
-- Console check: no browser console errors or page errors were reported on `/` or `/backup`. Console output contained only the React DevTools development information message.
+- `agent-browser` clicked that control in the production build. The HUD changed from `LOVE 87` to `LOVE 88`, the `LOVE +1` reaction appeared, and `.superpowers/sdd/screenshots/home-mobile-production-after-love.png` captured the state.
+- The earlier hydration failure was isolated to opening the development server at `127.0.0.1`; Next.js logged that it blocked cross-origin development resources from that host. The same build hydrates at `localhost`, and the production server avoids the development-origin restriction entirely.
+- The first successful click exposed duplicate React keys on the pet and reaction siblings. A failing source regression test was added, the keys were namespaced as `pet-*` and `reaction-*`, and the warning disappeared.
+- Console check: no browser console messages or page errors were reported on the production `/` or `/backup` runs.
 
 ## Comparison history
 
@@ -60,15 +64,28 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
   - Impact: The screen grid loses its intended framing and visibly diverges from the game-scene reference.
   - Fix: Added `overflow: hidden` to `.stage` so the pet is clipped to the stage between the two dividers.
 
-### Iteration 2: passed
+### Iteration 2: visual fix verified, overall blocked
 
 - Post-fix evidence: `.superpowers/sdd/screenshots/home-mobile-initial-final-stage-focus.png` and `.superpowers/sdd/screenshots/comparison-mobile-screen-focus.png` show both dividers as continuous lines and the fully visible pet centered within the stage.
 - No actionable P0, P1, or P2 visual fidelity findings remain.
 
+### Iteration 3: interaction verified
+
+- [P0] Center-control interaction initially lacked browser evidence.
+  - Location: `/`, center physical button with `aria-label="버디 쓰다듬기"`.
+  - Root cause: the browser used the blocked `127.0.0.1` development origin rather than the server's `localhost` origin.
+  - Verification: the production capture shows `LOVE 88` and `LOVE +1` after a real browser click.
+
+### Iteration 4: console warning resolved
+
+- [P1] The reaction render logged duplicate React sibling keys.
+  - Location: `components/TamagotchiDevice.tsx`, animated pet and reaction elements.
+  - Fix: assigned `pet-${state.reactionId}` and `reaction-${state.reactionId}` keys and added a regression test.
+  - Verification: the production click run completed with an empty browser console and no page errors.
+
 ## Findings
 
-- No remaining actionable P0, P1, or P2 visual fidelity findings.
-- Interaction browser evidence is incomplete because the existing dev-server browser session did not hydrate the React client. This is recorded as a verification concern, not a visual mismatch.
+- No remaining actionable P0, P1, or P2 findings.
 
 ## Implementation checklist
 
@@ -76,6 +93,7 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
 2. Completed: recapture fully loaded mobile, backup, and desktop evidence.
 3. Completed: compare full frame and focused game-screen regions against the visual truth.
 4. Completed: run unit tests, lint, build, and browser console checks.
+5. Completed: capture the center-control `LOVE 87` to `LOVE 88` and `LOVE +1` browser state from the production build.
 
 ## Follow-up polish
 

@@ -26,3 +26,13 @@ test("the tamagotchi device uses the supplied frame and generated pet assets", (
   assert.match(source, /\/tamagotchi\/tv-frame\.png/);
   assert.match(source, /\/tamagotchi\/idle-pet\.png/);
 });
+
+test("the animated pet and reaction use distinct React keys", () => {
+  const source = readFileSync(
+    resolve(repoRoot, "components/TamagotchiDevice.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /key={`pet-\${state\.reactionId}`}/);
+  assert.match(source, /key={`reaction-\${state\.reactionId}`}/);
+});

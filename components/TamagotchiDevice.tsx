@@ -43,13 +43,16 @@ export default function TamagotchiDevice() {
                   : styles.pet
               }
               height={1024}
-              key={state.reactionId}
+              key={`pet-${state.reactionId}`}
               priority
               src="/tamagotchi/idle-pet.png"
               width={1024}
             />
             {state.reactionId > 0 ? (
-              <span className={styles.reaction} key={state.reactionId}>
+              <span
+                className={styles.reaction}
+                key={`reaction-${state.reactionId}`}
+              >
                 LOVE +1
               </span>
             ) : null}

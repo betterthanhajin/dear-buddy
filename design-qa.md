@@ -14,22 +14,23 @@
 
 | Capture | Viewport | State | Evidence |
 | --- | --- | --- | --- |
-| Mobile initial | 390 x 844 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-mobile-production-initial.png` |
-| Mobile reaction | 390 x 844 | `/`, center control clicked, LOVE 88 and LOVE +1 | `.superpowers/sdd/screenshots/home-mobile-production-after-love.png` |
-| Mobile divider focus | 390 x 844 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-mobile-initial-final-stage-focus.png` |
-| Backup route | 390 x 844 | `/backup`, creator screen | `.superpowers/sdd/screenshots/backup-mobile-production.png` |
-| Desktop initial | 1440 x 900 | `/`, images loaded, LOVE 87 | `.superpowers/sdd/screenshots/home-desktop-production-initial.png` |
-| Full-frame comparison | normalized source and implementation | TV frame and controls | `.superpowers/sdd/screenshots/comparison-mobile-frame-full.png` |
-| Focused screen comparison | normalized source and implementation | HUD, pet, divider, stats | `.superpowers/sdd/screenshots/comparison-mobile-screen-focus.png` |
-
-The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.superpowers/sdd/screenshots/home-mobile-initial-fixed.png` are retained only as comparison-history evidence. They are not final QA evidence because their Next Image assets had not finished loading.
+| Mobile initial | 390 x 844 | `/`, images loaded, LOVE 87 | `docs/qa/tamagotchi-home/mobile-initial.png` |
+| Mobile reaction | 390 x 844 | `/`, center control clicked, LOVE 88 and LOVE +1 | `docs/qa/tamagotchi-home/mobile-after-love.png` |
+| Mobile divider focus | 390 x 844 | `/`, images loaded, LOVE 87 | `docs/qa/tamagotchi-home/stage-after.png` |
+| Backup route | 390 x 844 | `/backup`, creator screen | `docs/qa/tamagotchi-home/backup-mobile.png` |
+| Desktop initial | 1440 x 900 | `/`, images loaded, LOVE 87 | `docs/qa/tamagotchi-home/desktop-1440.png` |
+| Required desktop check | 1280 x 900 | `/`, 420 x 630 device, zero overflow | `agent-browser` viewport and bounding-box measurement below |
+| Full-frame comparison | normalized source and implementation | TV frame and controls | `docs/qa/tamagotchi-home/comparison-frame.png` |
+| Focused screen comparison | normalized source and implementation | HUD, pet, divider, stats | `docs/qa/tamagotchi-home/comparison-screen.png` |
 
 ## Loading and viewport checks
 
 - Production captures waited for network idle and both target images to finish loading.
 - The final mobile frame is fully visible. The frame measures 358 x 537 px inside a 390 x 844 px viewport, with no horizontal overflow.
 - The pet image is complete at 1024 x 1024 intrinsic size and fully visible inside the stage.
-- Desktop final capture renders the device at 420 x 630 px, centered in a 1440 x 900 viewport. Its ratio remains exactly 2:3 and it has no horizontal overflow.
+- At the plan's required 1280 x 900 viewport, `agent-browser` measured the device at x=430, y=135, width=420, and height=630. Document overflow was exactly 0 px on both axes.
+- The tracked 1440 x 900 desktop capture confirms the same centered 420 x 630 maximum-size layout visually.
+- At a short 844 x 390 landscape viewport, the device measured 238.656 x 357.984 px from y=16 to y=373.984. The document remained exactly 844 x 390 with zero overflow on both axes.
 - `/backup` rendered the previous creator screen at 390 x 844. Uploading the reference image and entering a name enabled the submit control, which verifies that the preserved client flow hydrates.
 
 ## Full-view and focused-region comparison
@@ -49,9 +50,12 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
 ## Interaction and console checks
 
 - The center control was located through `aria-label="버디 쓰다듬기"`, is enabled, and has a 68 x 68 px mobile hit target.
-- `agent-browser` clicked that control in the production build. The HUD changed from `LOVE 87` to `LOVE 88`, the `LOVE +1` reaction appeared, and `.superpowers/sdd/screenshots/home-mobile-production-after-love.png` captured the state.
+- `agent-browser` clicked that control in the production build. The HUD changed from `LOVE 87` to `LOVE 88`, the `LOVE +1` reaction appeared, and `docs/qa/tamagotchi-home/mobile-after-love.png` captured the state.
 - The earlier hydration failure was isolated to opening the development server at `127.0.0.1`; Next.js logged that it blocked cross-origin development resources from that host. The same build hydrates at `localhost`, and the production server avoids the development-origin restriction entirely.
 - The first successful click exposed duplicate React keys on the pet and reaction siblings. A failing source regression test was added, the keys were namespaced as `pet-*` and `reaction-*`, and the warning disappeared.
+- The accessibility snapshot exposes `FOOD 72%`, `LOVE 87%`, and `REST 64%` progress bars. After a click, its polite status changes to `애정 수치가 88로 올랐어요` and the LOVE progress bar reports 88%.
+- With reduced motion enabled, the pet animation resolves to `none`, the visible `LOVE +1` bubble resolves to `display: none`, and the live status still announces the updated value.
+- Repeated clicks stop at LOVE 99. After the final animation faded, an additional browser click kept LOVE 99, did not restart a visible reaction, and left the status unchanged.
 - Console check: no browser console messages or page errors were reported on the production `/` or `/backup` runs.
 
 ## Comparison history
@@ -60,13 +64,13 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
 
 - [P2] Opaque pet raster interrupted both horizontal screen dividers.
   - Location: `components/TamagotchiDevice.module.css`, `.stage`.
-  - Evidence: `.superpowers/sdd/screenshots/home-mobile-before-stage-focus.png` shows the pet's white square painting over the HUD bottom and stats top borders, leaving short border fragments.
+  - Evidence: `docs/qa/tamagotchi-home/stage-before.png` shows the pet's white square painting over the HUD bottom and stats top borders, leaving short border fragments.
   - Impact: The screen grid loses its intended framing and visibly diverges from the game-scene reference.
   - Fix: Added `overflow: hidden` to `.stage` so the pet is clipped to the stage between the two dividers.
 
 ### Iteration 2: visual fix verified, overall blocked
 
-- Post-fix evidence: `.superpowers/sdd/screenshots/home-mobile-initial-final-stage-focus.png` and `.superpowers/sdd/screenshots/comparison-mobile-screen-focus.png` show both dividers as continuous lines and the fully visible pet centered within the stage.
+- Post-fix evidence: `docs/qa/tamagotchi-home/stage-after.png` and `docs/qa/tamagotchi-home/comparison-screen.png` show both dividers as continuous lines and the fully visible pet centered within the stage.
 - No actionable P0, P1, or P2 visual fidelity findings remain.
 
 ### Iteration 3: interaction verified
@@ -83,6 +87,15 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
   - Fix: assigned `pet-${state.reactionId}` and `reaction-${state.reactionId}` keys and added a regression test.
   - Verification: the production click run completed with an empty browser console and no page errors.
 
+### Iteration 5: review findings resolved
+
+- [P2] Added live status text and semantic progress bars for the changing LOVE value and all three care stats.
+- [P2] Prevented a new reaction at LOVE 99 and verified the capped browser state.
+- [P2] Removed persistent reaction content for reduced-motion users while retaining the live status update.
+- [P3] Corrected the short-viewport height calculation to include all 32 px of vertical page padding.
+- [P2] Ran the required 1280 x 900 desktop measurement and recorded the exact centered bounds.
+- [P3] Copied the final visual evidence into tracked `docs/qa/tamagotchi-home/` assets so the reviewed commit contains the evidence it cites.
+
 ## Findings
 
 - No remaining actionable P0, P1, or P2 findings.
@@ -94,6 +107,7 @@ The prior captures `.superpowers/sdd/screenshots/home-mobile-before.png` and `.s
 3. Completed: compare full frame and focused game-screen regions against the visual truth.
 4. Completed: run unit tests, lint, build, and browser console checks.
 5. Completed: capture the center-control `LOVE 87` to `LOVE 88` and `LOVE +1` browser state from the production build.
+6. Completed: verify accessibility semantics, reduced motion, LOVE 99 behavior, 1280 x 900 desktop bounds, and short-landscape overflow.
 
 ## Follow-up polish
 

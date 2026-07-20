@@ -16,6 +16,16 @@
   flex: none;
 }
 
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .frame {
   z-index: 1;
   object-fit: contain;
@@ -188,7 +198,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reaction,
+  .reaction {
+    display: none;
+  }
+
   .petReacting {
     animation: none;
   }
@@ -196,6 +209,6 @@
 
 @media (max-height: 700px) {
   .device {
-    width: min(100%, 360px, calc((100svh - 24px) * 2 / 3));
+    width: min(100%, 360px, calc((100svh - 32px) * 2 / 3));
   }
 }

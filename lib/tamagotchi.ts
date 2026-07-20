@@ -9,8 +9,12 @@ export const INITIAL_TAMAGOTCHI_STATE: TamagotchiState = {
 };
 
 export function petBuddy(state: TamagotchiState): TamagotchiState {
+  if (state.affection >= 99) {
+    return state;
+  }
+
   return {
-    affection: Math.min(99, state.affection + 1),
+    affection: state.affection + 1,
     reactionId: state.reactionId + 1,
   };
 }

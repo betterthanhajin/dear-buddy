@@ -14,8 +14,7 @@ test("petBuddy increases affection and advances the reaction sequence", () => {
 });
 
 test("petBuddy caps affection at 99", () => {
-  assert.deepEqual(petBuddy({ affection: 99, reactionId: 4 }), {
-    affection: 99,
-    reactionId: 5,
-  });
+  const state = { affection: 99, reactionId: 4 };
+
+  assert.strictEqual(petBuddy(state), state);
 });

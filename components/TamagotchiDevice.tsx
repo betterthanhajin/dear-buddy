@@ -34,6 +34,17 @@ export default function TamagotchiDevice() {
             <span>LOVE {state.affection}</span>
           </header>
 
+          <span
+            aria-atomic="true"
+            aria-live="polite"
+            className={styles.srOnly}
+            role="status"
+          >
+            {state.reactionId > 0
+              ? `애정 수치가 ${state.affection}로 올랐어요`
+              : ""}
+          </span>
+
           <div className={styles.stage}>
             <Image
               alt="분홍 잎사귀를 머리에 얹은 하얀 버디"
@@ -50,6 +61,7 @@ export default function TamagotchiDevice() {
             />
             {state.reactionId > 0 ? (
               <span
+                aria-hidden="true"
                 className={styles.reaction}
                 key={`reaction-${state.reactionId}`}
               >
@@ -59,21 +71,29 @@ export default function TamagotchiDevice() {
           </div>
 
           <div aria-label="버디 상태" className={styles.stats}>
-            {stats.map((stat) => (
-              <div className={styles.stat} key={stat.label}>
-                <span>{stat.label}</span>
-                <i aria-hidden="true">
-                  <b
-                    className={styles[stat.tone]}
-                    style={{
-                      width: `${
-                        stat.label === "LOVE" ? state.affection : stat.value
-                      }%`,
-                    }}
-                  />
-                </i>
-              </div>
-            ))}
+            {stats.map((stat) => {
+              const currentValue =
+                stat.label === "LOVE" ? state.affection : stat.value;
+
+              return (
+                <div className={styles.stat} key={stat.label}>
+                  <span>{stat.label}</span>
+                  <i
+                    aria-label={`${stat.label} ${currentValue}%`}
+                    aria-valuemax={100}
+                    aria-valuemin={0}
+                    aria-valuenow={currentValue}
+                    role="progressbar"
+                  >
+                    <b
+                      aria-hidden="true"
+                      className={styles[stat.tone]}
+                      style={{ width: `${currentValue}%` }}
+                    />
+                  </i>
+                </div>
+              );
+            })}
           </div>
         </div>
 

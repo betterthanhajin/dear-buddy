@@ -17,6 +17,17 @@ test("the tamagotchi device exposes the three physical controls", () => {
   assert.match(source, /aria-label="더보기 버튼 준비 중"/);
 });
 
+test("the center physical control applies petBuddy to component state", () => {
+  const source = readFileSync(
+    resolve(repoRoot, "components/TamagotchiDevice.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /onClick=\{\(\) => setState\(petBuddy\)\}/);
+  assert.match(source, /LOVE \{state\.affection\}/);
+  assert.match(source, /state\.reactionId > 0/);
+});
+
 test("the tamagotchi device uses the supplied frame and generated pet assets", () => {
   const source = readFileSync(
     resolve(repoRoot, "components/TamagotchiDevice.tsx"),

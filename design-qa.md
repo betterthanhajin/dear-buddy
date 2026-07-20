@@ -35,8 +35,8 @@
 
 ## Full-view and focused-region comparison
 
-- Full view: `comparison-mobile-frame-full.png` compares the supplied frame with the rendered device. The implementation uses the supplied frame asset without approximation, preserves its 2:3 silhouette, and aligns all three transparent hit targets to the physical controls.
-- Focused region: `comparison-mobile-screen-focus.png` compares the primary game scene with the rendered screen. The pixel pet, monochrome HUD, cream screen surface, bounded stage, and three status bars retain the supplied scene's retro game language. The product intentionally uses the Task 3 `Lv.01`, `LOVE 87`, `FOOD`, `LOVE`, and `REST` content instead of recreating the reference screen verbatim.
+- Full view: `comparison-frame.png` compares the supplied frame with the rendered device. The implementation uses the supplied frame asset without approximation, preserves its 2:3 silhouette, and aligns all three transparent hit targets to the physical controls.
+- Focused region: `comparison-screen.png` compares the primary game scene with the rendered screen. The pixel pet, monochrome HUD, cream screen surface, bounded stage, and three status bars retain the supplied scene's retro game language. The product intentionally uses the Task 3 `Lv.01`, `LOVE 87`, `FOOD`, `LOVE`, and `REST` content instead of recreating the reference screen verbatim.
 - Final comparison: both source images and the production initial and reaction captures were opened together in one `view_image` comparison input. No new P0, P1, or P2 visual mismatch was found.
 
 ## Required fidelity surfaces
@@ -95,6 +95,7 @@
 - [P3] Corrected the short-viewport height calculation to include all 32 px of vertical page padding.
 - [P2] Ran the required 1280 x 900 desktop measurement and recorded the exact centered bounds.
 - [P3] Copied the final visual evidence into tracked `docs/qa/tamagotchi-home/` assets so the reviewed commit contains the evidence it cites.
+- [P2] Added an automated wiring check that fails if the center control stops applying `petBuddy` to component state; pure state tests and production browser evidence cover the resulting behavior.
 
 ## Findings
 
